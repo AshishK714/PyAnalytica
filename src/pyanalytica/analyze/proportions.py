@@ -109,20 +109,26 @@ def one_proportion_ztest(
     ci = (p_hat - 1.96 * se_hat, p_hat + 1.96 * se_hat)
 
     summary = pd.DataFrame({
-        "Statistic": ["n", "Successes", "Sample Proportion", "Hypothesized p0", "z", "p-value"],
-        "Value": [n, successes, round(p_hat, 4), p0, round(z, 4), round(p_val, 6)],
+        "Statistic": [
+            "Success value", "n", "Successes", "Sample Proportion",
+            "Hypothesized p0", "z", "p-value",
+        ],
+        "Value": [
+            f"{variable} = {success_value}", n, successes, round(p_hat, 4),
+            p0, round(z, 4), round(p_val, 6),
+        ],
     })
 
     p_str = "p < .001" if p_val < 0.001 else f"p = {p_val:.3f}"
     alt_desc = {"two-sided": "not equal to", "less": "less than", "greater": "greater than"}
     if p_val < 0.05:
         interp = (
-            f"The proportion of {success_value} in {variable} ({p_hat:.3f}) is "
+            f"Testing {variable} = {success_value}. Its proportion ({p_hat:.3f}) is "
             f"significantly {alt_desc[alternative]} {p0}, z = {z:.2f}, {p_str}."
         )
     else:
         interp = (
-            f"The proportion of {success_value} in {variable} ({p_hat:.3f}) is not "
+            f"Testing {variable} = {success_value}. Its proportion ({p_hat:.3f}) is not "
             f"significantly {alt_desc[alternative]} {p0}, z = {z:.2f}, {p_str}."
         )
     interp += f" 95% CI: ({ci[0]:.3f}, {ci[1]:.3f})."
@@ -213,7 +219,7 @@ def two_proportion_ztest(
     summary = pd.DataFrame({
         "Group": [str(groups[0]), str(groups[1])],
         "n": [n1, n2],
-        "Successes": [x1, x2],
+        f"{variable} = {success_value}": [x1, x2],
         "Proportion": [round(p1, 4), round(p2, 4)],
     })
 
@@ -221,13 +227,15 @@ def two_proportion_ztest(
     g1_label, g2_label = str(groups[0]), str(groups[1])
     if p_val < 0.05:
         interp = (
-            f"The proportion of {success_value} differs significantly between "
-            f"{g1_label} ({p1:.3f}) and {g2_label} ({p2:.3f}), z = {z:.2f}, {p_str}."
+            f"Testing {variable} = {success_value}. Its proportion differs "
+            f"significantly between {g1_label} ({p1:.3f}) and {g2_label} ({p2:.3f}), "
+            f"z = {z:.2f}, {p_str}."
         )
     else:
         interp = (
-            f"The proportion of {success_value} does not differ significantly between "
-            f"{g1_label} ({p1:.3f}) and {g2_label} ({p2:.3f}), z = {z:.2f}, {p_str}."
+            f"Testing {variable} = {success_value}. Its proportion does not differ "
+            f"significantly between {g1_label} ({p1:.3f}) and {g2_label} ({p2:.3f}), "
+            f"z = {z:.2f}, {p_str}."
         )
     interp += f" Difference: {diff:.3f}, 95% CI: ({ci[0]:.3f}, {ci[1]:.3f})."
 

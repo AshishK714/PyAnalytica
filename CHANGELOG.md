@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-09-07
+
+A hotfix for students already running the tool. Everything here came out of a
+153-case sweep of every panel against a 41,188-row teaching dataset, where each
+number was checked against an independent pandas/scipy/sklearn computation
+rather than against the app itself. These three are the ones that lose work or
+answer a question nobody asked; upgrade before the next assignment.
+
+### Fixed
+
+- **Add Binned Column no longer destroys the session.** `pd.cut` names its bins
+  with pandas `Interval` objects, which Shiny cannot serialise -- and it raised
+  downstream of this module's error handling, so no message ever reached the
+  screen. The panel simply stopped responding, and the reload it took to recover
+  started a new session, discarding the dataset and every derived column. Bins
+  are now named in readable text ("37.2 to 57.5"), in order, and the data grid
+  coerces any other dtype it cannot encode rather than wedging the session.
+- **Pivot row and column percentages are no longer halved by Show Margins.**
+  With margins on, the divisor included the "All" total, counting every cell
+  twice: `channel` x `subscribed` read 47.4 / 2.6 where the answer is
+  94.8 / 5.2, and every row totalled 50%. Cross-tab was never affected, so the
+  two panels disagreed on the same quantity. Show Code now prints the margin
+  slice it actually used.
+- **Proportion tests say which level they treated as a success.** The Success
+  Value control defaulted to the alphabetically first level, so a Yes/No outcome
+  tested "No" and reported the inverse question with a correct-looking sentence
+  and the sign flipped. Binary outcomes now default to the minority level, the
+  result leads with "Testing subscribed = Yes.", the summary table names the
+  level, and the control is labelled "Which value counts as a 'success'?".
+
+### Changed
+
+- Pivot percentages are rounded for display only, not inside the computation, so
+  the decimals control can recover the precision. A 0.04% category no longer
+  displays as 0.
+- `docs/INSTALL.md` pinned `pyanalytica==0.6.4`, two releases behind. It now
+  installs 0.7.1.
+
+### Tests
+
+880 unit tests, up from 860. `test_pivot_normalize_index` was passing *because*
+of the margins bug -- it summed the "All" column into the row, so 50 + 50 came
+to 100 and looked correct. It now checks the data columns alone.
+
 ## [0.7.0] - 2026-09-03
 
 Data > Transform could destroy a column and report success. Everything here came
