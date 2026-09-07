@@ -210,8 +210,21 @@ def test_one_prop_confidence_interval(titanic_df):
 
 def test_one_prop_summary_table(titanic_df):
     result = one_proportion_ztest(titanic_df, "Survived", "1", p0=0.5)
-    assert len(result.summary) == 6
+    assert len(result.summary) == 7
     assert "n" in result.summary["Statistic"].values
+
+
+def test_one_prop_names_the_level_it_tested(titanic_df):
+    """Which level counts as success changes the answer, so it has to be visible."""
+    result = one_proportion_ztest(titanic_df, "Survived", "1", p0=0.5)
+    assert "Survived = 1" in result.summary["Value"].astype(str).tolist()
+    assert result.interpretation.startswith("Testing Survived = 1.")
+
+
+def test_two_prop_names_the_level_it_tested(titanic_df):
+    result = two_proportion_ztest(titanic_df, "Survived", "1", "Sex")
+    assert result.interpretation.startswith("Testing Survived = 1.")
+    assert "Survived = 1" in result.summary.columns
 
 
 def test_one_prop_interpretation(titanic_df):

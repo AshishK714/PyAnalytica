@@ -51,7 +51,7 @@ def create_pivot_table(
             data_rows = result.iloc[:-1] if margins else result
             total = data_rows[val_col].sum()
             if total > 0:
-                result[val_col] = (result[val_col].astype(float) / float(total) * 100).round(1)
+                result[val_col] = result[val_col].astype(float) / float(total) * 100
 
         code = (
             f"result = df.groupby({idx_str}, observed=True)"
@@ -74,18 +74,20 @@ def create_pivot_table(
     )
 
     if normalize and aggfunc == "count":
+        # With margins on, the last column holds the row totals and the last row
+        # the column totals. Dividing by a sum that includes them counts every
+        # cell twice: that halved every percentage and made each row total 50%.
+        body_cols = result.iloc[:, :-1] if margins else result
+        body_rows = result.iloc[:-1, :] if margins else result
         if normalize == "index":
             # Row percentages
-            row_sums = result.sum(axis=1)
-            result = result.div(row_sums, axis=0) * 100
+            result = result.div(body_cols.sum(axis=1), axis=0) * 100
         elif normalize == "columns":
             # Column percentages
-            col_sums = result.sum(axis=0)
-            result = result.div(col_sums, axis=1) * 100
+            result = result.div(body_rows.sum(axis=0), axis=1) * 100
         elif normalize == "all":
             total = result.iloc[:-1, :-1].sum().sum() if margins else result.sum().sum()
             result = result / total * 100
-        result = result.round(1)
 
     # Generate code
     margins_str = f", margins={margins}" if margins else ""
@@ -100,11 +102,15 @@ def create_pivot_table(
     )
 
     if normalize:
+        # The slices drop the margin row/column from the divisor only.
+        body_c = "result.iloc[:, :-1]" if margins else "result"
+        body_r = "result.iloc[:-1, :]" if margins else "result"
+        body_a = "result.iloc[:-1, :-1]" if margins else "result"
         if normalize == "index":
-            code += "\nresult = result.div(result.sum(axis=1), axis=0) * 100"
+            code += f"\nresult = result.div({body_c}.sum(axis=1), axis=0) * 100"
         elif normalize == "columns":
-            code += "\nresult = result.div(result.sum(axis=0), axis=1) * 100"
+            code += f"\nresult = result.div({body_r}.sum(axis=0), axis=1) * 100"
         elif normalize == "all":
-            code += "\nresult = result / result.sum().sum() * 100"
+            code += f"\nresult = result / {body_a}.sum().sum() * 100"
 
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])

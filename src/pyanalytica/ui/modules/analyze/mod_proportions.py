@@ -46,6 +46,24 @@ def proportions_ui():
     )
 
 
+SUCCESS_LABEL = 'Which value counts as a "success"?'
+
+
+def _success_choices(series) -> tuple[list[str], str]:
+    """Offer the levels of an outcome, and pick the one worth testing.
+
+    Sorting alphabetically and taking the first put "No" ahead of "Yes" for
+    every Yes/No, Pass/Fail and True/False outcome, so the test answered the
+    inverse of the question the student asked -- and the result sentence read
+    plausibly either way. In a binary outcome the minority level is the event of
+    interest almost every time, so default to that instead.
+    """
+    counts = series.dropna().astype(str).value_counts()
+    levels = sorted(counts.index.tolist())
+    default = counts.idxmin() if len(levels) == 2 else (levels[0] if levels else "")
+    return levels, str(default)
+
+
 @module.server
 def proportions_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
@@ -106,16 +124,20 @@ def proportions_server(input, output, session, state: WorkbenchState, get_curren
         df = get_current_df()
         var = input.op_var()
         req(df is not None, var)
-        vals = sorted(df[var].dropna().astype(str).unique().tolist())
-        return ui.input_select("op_success", "Success Value", choices=vals)
+        vals, default = _success_choices(df[var])
+        return ui.input_select(
+            "op_success", SUCCESS_LABEL, choices=vals, selected=default
+        )
 
     @render.ui
     def tp_success_choices():
         df = get_current_df()
         var = input.tp_var()
         req(df is not None, var)
-        vals = sorted(df[var].dropna().astype(str).unique().tolist())
-        return ui.input_select("tp_success", "Success Value", choices=vals)
+        vals, default = _success_choices(df[var])
+        return ui.input_select(
+            "tp_success", SUCCESS_LABEL, choices=vals, selected=default
+        )
 
     @reactive.effect
     @reactive.event(input.run_btn)

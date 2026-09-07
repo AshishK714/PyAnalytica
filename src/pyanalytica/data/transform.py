@@ -324,6 +324,22 @@ def add_column_conditional(
     return result, CodeSnippet(code=code, imports=["import numpy as np", "import pandas as pd"])
 
 
+def _bin_labels(intervals) -> list[str]:
+    """Name bins the way a reader would say them: "37.2 to 57.5".
+
+    Uses the coarsest rounding that still tells the bins apart, so narrow bins
+    do not all collapse to the same name.
+    """
+    for places in (1, 2, 3, 4, 6):
+        names = [
+            f"{round(float(iv.left), places):g} to {round(float(iv.right), places):g}"
+            for iv in intervals
+        ]
+        if len(set(names)) == len(names):
+            return names
+    return [str(iv) for iv in intervals]
+
+
 def add_column_binned(
     df: pd.DataFrame, new_col: str, source_col: str,
     bins: int | list, labels: list[str] | None = None
@@ -338,10 +354,23 @@ def add_column_binned(
                 "Give one label per bin, or leave the labels blank."
             )
     result = df.copy()
-    result[new_col] = pd.cut(result[source_col], bins=bins, labels=labels)
+    binned = pd.cut(result[source_col], bins=bins, labels=labels)
+    shown = labels
+    if labels is None:
+        # pd.cut names the bins with pandas Interval objects. They are correct,
+        # but nothing downstream can serialise them: the data grid raises
+        # "Object of type Interval is not JSON serializable" from inside Shiny's
+        # renderer, after this module's error handling, so the session wedges with
+        # no message at all and the reload it takes to recover costs the student
+        # their whole workbench. Name the bins in text, keeping their order.
+        shown = _bin_labels(binned.cat.categories)
+        binned = binned.cat.rename_categories(shown)
+    result[new_col] = binned
 
-    labels_str = f", labels={labels!r}" if labels else ""
-    code = f'df["{new_col}"] = pd.cut(df["{source_col}"], bins={bins!r}{labels_str})'
+    code = (
+        f'df["{new_col}"] = pd.cut(df["{source_col}"], '
+        f'bins={bins!r}, labels={shown!r})'
+    )
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])
 
 
