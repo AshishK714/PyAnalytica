@@ -179,6 +179,26 @@ class TestEvaluateThreshold:
             f"got {recall(at_half)} at 0.5 and {recall(at_nine)} at 0.9"
         )
 
+    def test_t12_no_regression_sections_are_offered_for_a_classifier(self, page: Page):
+        """And none of the classifier's for a regression, checked in t11's class.
+
+        A section that opens onto nothing is the same fault as a heading over an
+        empty table, one click further in.
+        """
+        # The classifier fitted in t01 is still the selection here; it is saved
+        # under a generated name, so take whatever is chosen rather than
+        # guessing one.
+        _nav_to(page, "Model", "Evaluate")
+        _wait_stable(page, 2000)
+        _click_button(page, _sid("evaluate", "run_btn"))
+        _wait_stable(page, 6000)
+
+        body = page.locator("body").inner_text()
+        assert "ROC curve" in body
+        assert "Predicted vs actual" not in body
+        assert "Residuals" not in body
+
+
 class TestEvaluatingARegression:
     """Model > Evaluate used to hand a regression to sklearn's classification
     metrics, which answered "continuous is not supported" -- a message naming a
@@ -221,7 +241,7 @@ class TestEvaluatingARegression:
         assert "continuous is not supported" not in page.locator("body").inner_text()
 
     def test_t09_the_measures_are_the_ones_that_mean_something(self, page: Page):
-        table = page.locator(_sid("evaluate", "regression_table"))
+        table = page.locator(_sid("evaluate", "results_table"))
         expect(table).to_be_visible(timeout=20_000)
         body = table.inner_text().upper()
         for measure in ("RMSE", "MAE", "ROWS"):

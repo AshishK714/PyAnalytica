@@ -44,23 +44,14 @@ def evaluate_ui():
         # kind of model; the panel used to assume classification and hand a
         # regression to sklearn, which answered "continuous is not supported".
         ui.output_ui("metrics_summary"),
-        ui.output_ui("cm_heading"),
-        ui.output_data_frame("cm_table"),
-        ui.output_data_frame("regression_table"),
+        ui.output_ui("results_heading"),
+        ui.output_data_frame("results_table"),
         download_result_ui("dl"),
-        # Tier 2 -- whichever of these the model has.
-        supporting(
-            "ROC curve",
-            ui.output_plot("roc_plot", height=PLOT_HEIGHT),
-        ),
-        supporting(
-            "Predicted vs actual",
-            ui.output_plot("pred_vs_actual", height=PLOT_HEIGHT),
-        ),
-        supporting(
-            "Residuals",
-            ui.output_plot("resid_plot", height=PLOT_HEIGHT),
-        ),
+        # Tier 2 -- whichever of these the model has. Rendered rather than
+        # laid out, because a classification has no residual plot and a
+        # regression has no ROC curve: offering a section that opens onto
+        # nothing is the same fault as a heading over an empty table.
+        ui.output_ui("extras"),
         code_panel_ui("code"),
     )
 
@@ -225,17 +216,37 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
         )
 
     @render.ui
-    def cm_heading():
+    def results_heading():
         # This heading used to be static, so a failed evaluation left
         # "Confusion Matrix" standing over an empty page.
+        if reg_result() is not None:
+            return ui.h5("How far the predictions were off")
         req(eval_result() is not None)
         return ui.h5("Confusion Matrix")
 
-    @render.data_frame
-    def regression_table():
-        r = reg_result()
+    @render.ui
+    def extras():
+        if reg_result() is not None:
+            return ui.div(
+                supporting(
+                    "Predicted vs actual",
+                    ui.output_plot("pred_vs_actual", height=PLOT_HEIGHT),
+                ),
+                supporting(
+                    "Residuals",
+                    ui.output_plot("resid_plot", height=PLOT_HEIGHT),
+                ),
+            )
+        r = eval_result()
         req(r is not None)
-        return render.DataGrid(r.summary)
+        if r.roc_curve_plot is None:
+            # No ROC for a multiclass target, so do not offer one.
+            return ui.div()
+        return supporting(
+            "ROC curve",
+            ui.output_plot("roc_plot", height=PLOT_HEIGHT),
+        )
+
 
     @render.plot
     def pred_vs_actual():
@@ -250,7 +261,10 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
         return r.residual_plot
 
     @render.data_frame
-    def cm_table():
+    def results_table():
+        reg = reg_result()
+        if reg is not None:
+            return render.DataGrid(reg.summary)
         r = eval_result()
         req(r is not None)
         return render.DataGrid(r.confusion_matrix.reset_index())
@@ -267,6 +281,8 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
             reg_result().summary if reg_result() is not None
             else eval_result().confusion_matrix.reset_index()
         ),
-        filename="confusion_matrix",
+        filename=lambda: (
+            "regression_error" if reg_result() is not None else "confusion_matrix"
+        ),
     )
     code_panel_server("code", get_code=last_code)

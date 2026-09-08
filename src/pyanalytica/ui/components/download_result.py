@@ -21,9 +21,16 @@ def download_result_server(
     output,
     session,
     get_df: Callable,
-    filename: str = "result",
+    filename: str | Callable[[], str] = "result",
 ):
-    @render_download(filename=lambda: f"{filename}.csv")
+    """*filename* may be a callable, for a panel whose download changes with
+    what it is showing -- Evaluate saves a confusion matrix or a table of
+    regression error depending on the model, and naming both after the first
+    would mislabel half of them."""
+
+    @render_download(
+        filename=lambda: f"{filename() if callable(filename) else filename}.csv"
+    )
     def dl_btn():
         df = get_df()
         req(df is not None)

@@ -5,6 +5,88 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-09-08
+
+Three changes a student will notice: the bundled datasets are the real ones,
+every panel shows its answer before its supporting material, and Model >
+Evaluate works on a regression.
+
+### The bundled datasets are real now
+
+`titanic`, `tips` and `diamonds` were all **simulated** -- generated from
+distributions chosen to give the right shape, then written to files named after
+the well-known originals, with nothing anywhere saying so.
+
+| | Shipped | Actual |
+|---|---|---|
+| Titanic survivors | 438 (49.2%) | 342 (38.4%) |
+| Female survival rate | 69.6% | 74.2% |
+| Mean tip | 3.98 | 3.00 |
+| Mean diamond price | 2361.73 | 3932.80 |
+
+The Titanic is the sharpest case: it is the one dataset everybody already knows
+something about, so a student who remembered the story or looked up the
+survival rate got a different answer from the tool with no explanation
+available. The arithmetic had been right the whole time, on data that was not
+what its name promised.
+
+The real data ships instead, each with a `SOURCE.md` giving figures to check it
+against. `generate.py` no longer produces them. See `docs/DATASETS.md`.
+
+The bundled Practice drills were re-answered against the real data, and their
+explanations -- which quoted the old numbers and which nothing checked -- are
+corrected.
+
+### Panels show the answer first
+
+Every panel used to render everything it could compute: 103 outputs and 18
+plots across 30 panels, against eight uses of a collapsible container in the
+whole app. Model > Regression answered "what are the coefficients" and then,
+unasked, drew VIF, residuals and a Q-Q plot, so on a laptop the coefficients
+were the only part above the fold.
+
+Seven panels now follow one rule -- the answer is on screen, the supporting
+numbers and the diagnostics are offered by name. Nothing in a closed section is
+drawn until it is opened. See `docs/DISCLOSURE.md` for the tiering of each.
+
+Headings moved inside the sections they name. A static heading sits in the
+layout whether or not its content rendered, which is how a failed evaluation
+came to show "Confusion Matrix" over an empty page.
+
+### Model > Evaluate handles a regression
+
+Choosing a saved regression gave `continuous is not supported` -- scikit-learn's
+phrase for a target type -- under a Confusion Matrix heading. It now reports
+R-squared, RMSE and MAE in the units of the target, with predicted-vs-actual
+and residual plots, and offers only the sections the model actually has.
+
+### Also fixed
+
+- **Pivot and Cross-tab say what their numbers are.** A table of 32.2581 /
+  67.7419 / 100 was percentages or counts depending on a sidebar dropdown, with
+  nothing in the output saying which. The caption names the reading and the base
+  each percentage is taken over -- and says so honestly when Normalize was
+  ignored, which happens for any aggregation other than a count.
+- **Goodness-of-fit tests state their null hypothesis**, and a high p-value
+  reads as "no evidence against" rather than "good fit", which was the
+  misinterpretation the panel exists to correct.
+- **An invalid normality test is gone.** The CLT panel ran a Kolmogorov-Smirnov
+  test against a normal fitted to the same sample -- the Lilliefors situation,
+  where the p-value comes out far too large. Over 3000 replications it rejected
+  0.0% of the time where 5% is correct, and it called gamma data "consistent
+  with normal" at p = 0.116 while Shapiro-Wilk gave 6e-08 on the same sample.
+- **Plot titles survive being resized.** Figures are built at 8x5 inches and
+  re-rendered at whatever the panel gives them; a one-shot `tight_layout()`
+  freezes margins computed for the original height and leaves ~4px above the
+  title, which clips on some screens and not others. All 33 real calls became
+  layout engines, which recompute on every draw.
+
+### Tests
+
+1067 unit tests, up from 1001. Three new classes of check: that every rendered
+control is read, that a panel does not draw a second plot unasked, and that a
+figure keeps its headroom after a resize.
+
 ## [0.8.0] - 2026-09-08
 
 Ten defects, found by finishing the QA sweep across Model, the Data tab,
