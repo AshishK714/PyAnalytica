@@ -33,7 +33,7 @@ def correlation_matrix(
         square=True, ax=ax,
     )
     ax.set_title(f"Correlation Matrix ({method.title()})")
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     cols_str = repr(cols)
     code = (

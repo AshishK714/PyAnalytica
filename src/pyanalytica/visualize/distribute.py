@@ -50,7 +50,7 @@ def histogram(
             kind="hist", **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"Distribution of {col}", y=1.02)
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -73,7 +73,7 @@ def histogram(
         ax.set_title(f"Distribution of {col}")
         ax.set_xlabel(col)
         ax.set_ylabel("Count")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(8, 5))\n'
@@ -113,7 +113,7 @@ def boxplot(
             **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"Box Plot of {col}", y=1.02)
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -129,7 +129,7 @@ def boxplot(
         else:
             sns.boxplot(x=df[col].dropna(), ax=ax)
         ax.set_title(f"Box Plot of {col}")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(8, 5))\n'
@@ -169,7 +169,7 @@ def violin(
             **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"Violin Plot of {col}", y=1.02)
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -185,7 +185,7 @@ def violin(
         else:
             sns.violinplot(x=df[col].dropna(), ax=ax)
         ax.set_title(f"Violin Plot of {col}")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(8, 5))\n'
@@ -226,7 +226,7 @@ def bar_chart(
         ax.set_ylabel(ylabel)
 
     ax.set_title(f"{'Percentage' if pct else 'Count'} of {col}")
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     sort_str = ".sort_values(ascending=False)" if sort else ""
     pct_str = " / counts.sum() * 100" if pct else ""

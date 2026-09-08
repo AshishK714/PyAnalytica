@@ -56,7 +56,7 @@ def grouped_boxplot(
         )
         g.figure.suptitle(f"{y_num} by {x_cat}", y=1.02)
         g.set_xticklabels(rotation=45, ha="right")
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -71,7 +71,7 @@ def grouped_boxplot(
         sns.boxplot(data=df, x=x_cat, y=y_num, order=order, ax=ax, **hue_kwarg)
         ax.set_title(f"{y_num} by {x_cat}")
         plt.xticks(rotation=45, ha="right")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
@@ -116,7 +116,7 @@ def grouped_violin(
         )
         g.figure.suptitle(f"{y_num} by {x_cat}", y=1.02)
         g.set_xticklabels(rotation=45, ha="right")
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -130,7 +130,7 @@ def grouped_violin(
         sns.violinplot(data=df, x=x_cat, y=y_num, order=order, ax=ax, **hue_kwarg)
         ax.set_title(f"{y_num} by {x_cat}")
         plt.xticks(rotation=45, ha="right")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
@@ -173,7 +173,7 @@ def bar_of_means(
         )
         g.figure.suptitle(f"Mean {y_num} by {x_cat}", y=1.02)
         g.set_xticklabels(rotation=45, ha="right")
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -191,7 +191,7 @@ def bar_of_means(
         )
         ax.set_title(f"Mean {y_num} by {x_cat}")
         plt.xticks(rotation=45, ha="right")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
@@ -232,7 +232,7 @@ def strip_plot(
         )
         g.figure.suptitle(f"{y_num} by {x_cat}", y=1.02)
         g.set_xticklabels(rotation=45, ha="right")
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
@@ -247,7 +247,7 @@ def strip_plot(
         sns.stripplot(data=df, x=x_cat, y=y_num, alpha=0.5, jitter=True, ax=ax, **hue_kwarg)
         ax.set_title(f"{y_num} by {x_cat}")
         plt.xticks(rotation=45, ha="right")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'

@@ -76,7 +76,7 @@ def evaluate_classification(
             ax.legend()
             ax.set_xlim([0, 1])
             ax.set_ylim([0, 1.05])
-            roc_fig.tight_layout()
+            roc_fig.set_layout_engine("tight")
         except Exception:
             logging.getLogger(__name__).warning("ROC/AUC computation failed", exc_info=True)
 
@@ -108,7 +108,7 @@ def evaluate_classification(
         ax.set_ylabel("Profit")
         ax.set_title("Profit Curve")
         ax.axhline(y=0, color="gray", linestyle="--")
-        profit_fig.tight_layout()
+        profit_fig.set_layout_engine("tight")
 
     # Fairness metrics
     fairness = None

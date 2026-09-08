@@ -427,7 +427,7 @@ def simulate_distribution(
     ax.set_xlabel("Value")
     ax.set_ylabel("Density")
     ax.legend()
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     # --- Code snippet ---
     seed_str = f"\nrng = np.random.default_rng({seed})" if seed is not None else "\nrng = np.random.default_rng()"
@@ -533,7 +533,7 @@ def simulate_clt(
     ax2.legend(fontsize=8)
 
     fig.suptitle(f"Central Limit Theorem: {dist_name.title()}", fontsize=13, fontweight="bold")
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     interpretation = (
         f"The Central Limit Theorem states that the sampling distribution of the mean "
@@ -624,7 +624,7 @@ def simulate_lln(
     ax.set_xlabel("Number of Observations")
     ax.set_ylabel("Running Mean")
     ax.legend()
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     interpretation = (
         f"The Law of Large Numbers states that as the number of observations increases, "

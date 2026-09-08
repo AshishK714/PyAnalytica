@@ -54,7 +54,7 @@ def scatter(
             **facet_kwargs, **plot_kwargs,
         )
         g.figure.suptitle(f"{y} vs {x}", y=1.02)
-        g.tight_layout()
+        g.figure.set_layout_engine("tight")
         fig = g.figure
 
         facet_args = ""
@@ -95,7 +95,7 @@ def scatter(
             ])
 
         ax.set_title(f"{y} vs {x}")
-        fig.tight_layout(pad=1.5)
+        fig.set_layout_engine("tight", pad=1.5)
 
         code_lines.extend([
             f'ax.set_title("{y} vs {x}")',
@@ -120,7 +120,7 @@ def hexbin(
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     ax.set_title(f"{y} vs {x} (hexbin)")
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     code = (
         f'fig, ax = plt.subplots(figsize=(8, 6))\n'

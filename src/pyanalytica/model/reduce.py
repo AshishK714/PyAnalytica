@@ -86,7 +86,7 @@ def pca_analysis(
     ax2.set_ylabel("Cumulative Variance Explained (%)")
     ax2.set_title("Cumulative Variance")
     ax2.legend()
-    fig_scree.tight_layout()
+    fig_scree.set_layout_engine("tight")
 
     # Biplot (PC1 vs PC2)
     fig_biplot = None
@@ -110,7 +110,7 @@ def pca_analysis(
         ax.set_title("PCA Biplot")
         ax.axhline(y=0, color="gray", linestyle="--", alpha=0.3)
         ax.axvline(x=0, color="gray", linestyle="--", alpha=0.3)
-        fig_biplot.tight_layout()
+        fig_biplot.set_layout_engine("tight")
 
     feats_str = repr(features)
     n_str = f", n_components={n_components}" if n_components != max_comp else ""
