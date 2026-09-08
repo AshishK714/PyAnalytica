@@ -15,6 +15,7 @@ from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, suppo
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -39,6 +40,8 @@ def proportions_ui():
             ui.input_action_button("run_btn", "Run Test", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("test_result"),
         decimals_ui("dec"),
         ui.output_ui("result_tables"),
@@ -69,6 +72,7 @@ def _success_choices(series) -> tuple[list[str], str]:
 def proportions_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     last_result = reactive.value(None)
+    status = status_server("status")
     last_test_type = reactive.value(None)
     get_dec = decimals_server("dec")
 
@@ -214,7 +218,8 @@ def proportions_server(input, output, session, state: WorkbenchState, get_curren
                 last_code.set(r.code.code)
 
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            last_result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def test_result():

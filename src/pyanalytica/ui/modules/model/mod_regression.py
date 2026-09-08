@@ -21,6 +21,7 @@ from pyanalytica.ui.components.disclosure import (
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -62,6 +63,8 @@ def regression_ui():
             width=300,
         ),
         # Tier 1 -- the answer.
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("model_summary"),
         decimals_ui("dec"),
         ui.output_data_frame("coef_table"),
@@ -88,6 +91,7 @@ def regression_ui():
 def regression_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     result = reactive.value(None)
+    status = status_server("status")
     get_dec = decimals_server("dec")
 
     @reactive.effect
@@ -132,9 +136,8 @@ def regression_server(input, output, session, state: WorkbenchState, get_current
                     f"least one different feature.",
                 )
                 return
-            ui.notification_show(
-                f"'{target}' is the target, so it was left out of the features.",
-                type="message",
+            status.done(
+                f"'{target}' is the target, so it was left out of the features."
             )
         try:
             test_size = input.test_size() if input.test_size() > 0 else None
@@ -169,10 +172,9 @@ def regression_server(input, output, session, state: WorkbenchState, get_current
             )
             state.model_store.save(model_name, artifact)
             state._notify()
-            ui.notification_show(
+            status.done(
                 f"Model saved as '{model_name}'. Open it under "
-                f"Model > Evaluate or Model > Predict.",
-                type="message",
+                f"Model > Evaluate or Model > Predict."
             )
 
             # Save train/test splits as datasets
@@ -190,12 +192,13 @@ def regression_server(input, output, session, state: WorkbenchState, get_current
                     state.load(f"{base}_test", test_df)
                     saved.append(f"{base}_test")
                 if saved:
-                    ui.notification_show(f"Saved datasets: {', '.join(saved)}", type="message")
+                    status.done(f"Saved datasets: {', '.join(saved)}")
                 else:
-                    ui.notification_show("No train/test data to save (set Test Split > 0).", type="warning")
+                    status.check("No train/test data to save (set Test Split > 0).")
 
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def model_summary():

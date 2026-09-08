@@ -13,6 +13,7 @@ from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_u
 from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -43,6 +44,8 @@ def evaluate_ui():
         # Tier 1 -- how the model did. Which numbers those are depends on the
         # kind of model; the panel used to assume classification and hand a
         # regression to sklearn, which answered "continuous is not supported".
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("metrics_summary"),
         ui.output_ui("results_heading"),
         ui.output_data_frame("results_table"),
@@ -60,6 +63,7 @@ def evaluate_ui():
 def evaluate_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     eval_result = reactive.value(None)
+    status = status_server("status")
     is_binary = reactive.value(False)
     last_threshold = reactive.value(None)
     reg_result = reactive.value(None)
@@ -101,7 +105,10 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
                 y_encoded = artifact.y_train
 
             if X is None or y_encoded is None:
-                ui.notification_show("No data available for selected split.", type="warning")
+                status.check(
+                    "That model has no rows stored for the split you chose. "
+                    "Fit it again with Test Split above 0 to evaluate on held-out rows."
+                )
                 return
 
             y_true = np.asarray(y_encoded)
@@ -177,7 +184,9 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
             last_code.set(r.code.code)
 
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            eval_result.set(None)
+            reg_result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def metrics_summary():

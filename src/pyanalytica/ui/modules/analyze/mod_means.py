@@ -18,6 +18,7 @@ from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, suppo
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -42,6 +43,8 @@ def means_ui():
             ui.input_action_button("run_btn", "Run Test", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Above the result, because when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("test_result"),
         decimals_ui("dec"),
         ui.output_data_frame("group_stats"),
@@ -60,6 +63,7 @@ def means_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     test_result_val = reactive.value(None)
     get_dec = decimals_server("dec")
+    status = status_server("status")
 
     @reactive.effect
     def _update_cols():
@@ -108,6 +112,8 @@ def means_server(input, output, session, state: WorkbenchState, get_current_df):
             return
         col = input.value_col()
         if not require(col, "Choose the numeric column whose mean you want to test."):
+            test_result_val.set(None)
+            status.check("Choose the numeric column whose mean you want to test.")
             return
         tt = input.test_type()
 
@@ -143,10 +149,15 @@ def means_server(input, output, session, state: WorkbenchState, get_current_df):
             else:
                 return
             test_result_val.set(result)
+            status.clear()
             state.codegen.record(result.code, action="analyze", description=result.test_name)
             last_code.set(result.code.code)
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            # Clear the result as well as reporting the failure. Leaving it
+            # showed the previous test's answer beside the inputs that failed,
+            # and once the toast expired nothing marked it as stale.
+            test_result_val.set(None)
+            status.failed(str(e))
 
     @render.ui
     def test_result():

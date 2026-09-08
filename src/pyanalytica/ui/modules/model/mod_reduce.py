@@ -16,6 +16,7 @@ from pyanalytica.ui.components.disclosure import (
 )
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -31,6 +32,8 @@ def reduce_ui():
             width=300,
         ),
         # Tier 1 -- how much variance the components explain.
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("guidance"),
         ui.output_ui("pca_summary"),
         download_result_ui("dl"),
@@ -59,6 +62,7 @@ def reduce_ui():
 def reduce_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     result = reactive.value(None)
+    status = status_server("status")
 
     @reactive.effect
     def _update_cols():
@@ -95,7 +99,8 @@ def reduce_server(input, output, session, state: WorkbenchState, get_current_df)
             state.codegen.record(r.code, action="model", description="PCA")
             last_code.set(r.code.code)
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def guidance():
