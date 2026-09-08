@@ -43,3 +43,8 @@ Thumbs.db
 *.master.yaml
 *.key.yaml
 e2e_result.log
+
+# Stray captures. Screenshots kept for the README live in docs/screenshots/;
+# anything dropped at the top level is working material.
+/*.png
+/*.jpg

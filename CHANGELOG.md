@@ -5,7 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.0] - 2026-09-08
+
+Ten defects, found by finishing the QA sweep across Model, the Data tab,
+Transform and Report. None of them was a wrong calculation. The arithmetic was
+checked against an independent scikit-learn and pandas computation throughout
+and matched to four decimals every time, including the train/test leakage result
+the coursework is built around: AUC 0.6335 without the leaking column, 0.8644
+with it.
+
+What was wrong was everything around the arithmetic. A number labelled as
+something it was not. A control that did nothing. A refusal that named a pandas
+internal instead of the column. An exported script that could not run. Those are
+harder to notice than a crash, which is why they survived this long, and why the
+three new test classes below aim at them specifically.
+
+Upgrade before the next assignment: several of these produce confident, wrong
+output today.
+
 
 The Model tab, swept against an independent sklearn computation for the first
 time. **The arithmetic was clean** -- coefficients, accuracies, AUC, k-means

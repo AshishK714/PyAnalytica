@@ -6,9 +6,9 @@
 
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776ab?logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.7.2-667eea.svg)](https://pypi.org/project/pyanalytica/)
+[![Version](https://img.shields.io/badge/version-0.8.0-667eea.svg)](https://pypi.org/project/pyanalytica/)
 [![Shiny](https://img.shields.io/badge/built%20with-Shiny%20for%20Python-764ba2.svg)](https://shiny.posit.co/py/)
-[![Tests](https://img.shields.io/badge/tests-901%20passing-22c55e.svg)]()
+[![Tests](https://img.shields.io/badge/tests-1001%20passing-22c55e.svg)]()
 
 *Interactive data exploration, visualization, statistical analysis, and machine learning — with a "Show Code" button that reveals the pandas & sklearn code behind every operation.*
 
@@ -32,17 +32,32 @@
 
 ---
 
-<details>
-<summary><strong>Screenshots</strong></summary>
+## Screenshots
 
-> Screenshots coming soon. The app features a modern gradient + glassmorphism UI with:
-> - Indigo-to-purple gradient navbar
-> - Glassmorphism panels with frosted-glass effect
-> - Clean data grids with gradient headers
-> - Dark-themed "Show Code" panels
-> - Polished form controls with accent focus rings
-
-</details>
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/01-load.png" alt="Data &gt; Load, with the titanic dataset loaded and previewed"></td>
+<td width="50%"><img src="docs/screenshots/02-pivot.png" alt="Explore &gt; Pivot, showing row percentages with margins"></td>
+</tr>
+<tr>
+<td><strong>Load</strong> — bundled datasets, a file, or a URL. Dates are
+recognised on the way in, and the shape and memory are reported before you
+commit to anything.</td>
+<td><strong>Pivot</strong> — counts, means and percentages, with margins. Every
+table has a <em>Show Code</em> panel underneath carrying the pandas that
+produced it.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/03-proportions.png" alt="Analyze &gt; Proportions, a two-sample proportion test"></td>
+<td><img src="docs/screenshots/05-evaluate.png" alt="Model &gt; Evaluate, with metrics, confusion matrix and ROC curve"></td>
+</tr>
+<tr>
+<td><strong>Analyze</strong> — the result is a sentence, and it says which level
+it treated as a success, because that choice changes the answer.</td>
+<td><strong>Evaluate</strong> — accuracy next to the majority-class baseline it
+has to beat, and a threshold that moves precision against recall.</td>
+</tr>
+</table>
 
 ---
 
@@ -129,7 +144,7 @@ pip install --upgrade pyanalytica
 ### Install from source (for development)
 
 ```bash
-git clone https://github.com/social-engineer-ai/PyAnalytica.git
+git clone https://github.com/AshishK714/PyAnalytica.git
 cd PyAnalytica
 pip install -e ".[dev,all]"
 ```
@@ -339,7 +354,7 @@ proc.to_notebook("my_analysis.ipynb")
 ### Setup
 
 ```bash
-git clone https://github.com/social-engineer-ai/PyAnalytica.git
+git clone https://github.com/AshishK714/PyAnalytica.git
 cd PyAnalytica
 pip install -e ".[dev,all]"
 
