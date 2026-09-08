@@ -35,6 +35,23 @@ number was labelled, or in a control that did nothing.
   name the column, show its values, and point at Data > Transform > Dummy
   Encode (One-Hot).
 
+### Fixed (Data > Transform)
+
+- **String: Extract works on patterns written the ordinary way.** The typed
+  pattern was wrapped in brackets to give it a group -- correct for a pattern
+  with no group, wrong for every pattern that has one, which is how anyone who
+  knows regular expressions writes them. `^(\w+)` became two groups,
+  `str.extract` returned a two-column frame, and assigning it to one column
+  raised *Cannot set a DataFrame with multiple columns to the single column*.
+  The action failed on its ordinary use and named an internal pandas concept
+  while doing it. Brackets are now added only when the pattern has no group of
+  its own; a pattern with two is refused in words that say how to fix it.
+- **The expression box explains a failure it used to pass through.**
+  `job + " | " + channel` gave *unsupported operand type(s) for +: 'str' and
+  '<class 'str'>'*, which names neither the column nor the operation. It now
+  says that quoted text does not work there, that joining two columns does, and
+  which actions build a text column instead.
+
 ### Fixed (Timeline, on pandas 2)
 
 - **Month and weekday names are recognised directly**, rather than inferred
@@ -72,6 +89,13 @@ number was labelled, or in a control that did nothing.
 
 ### Added
 
+- `tests/test_e2e_transform_actions.py` -- all nineteen Transform actions driven
+  in the app, each from a freshly loaded dataset, each followed by asking the
+  server for something new. Apply commits with no undo, so sharing one dataset
+  across the sweep meant each action broke the next one's column.
+- `tests/test_data/test_str_extract_patterns.py`, including the capture-group
+  detector's own cases: escaped brackets, character classes, non-capturing and
+  named groups.
 - `tests/test_ui/test_no_dead_controls.py` -- an AST check that every control
   the app renders is read by the code behind it. Milliseconds, no browser. It
   found the threshold slider and reports clean otherwise.
