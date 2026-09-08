@@ -8,6 +8,7 @@ from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.model.reduce import pca_analysis
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
 from pyanalytica.ui.components.selects import (
@@ -24,13 +25,24 @@ def reduce_ui():
             ui.input_action_button("run_btn", "Run PCA", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Tier 1 -- how much variance the components explain.
         ui.output_ui("guidance"),
         ui.output_ui("pca_summary"),
-        ui.output_plot("scree_plot", height="350px"),
-        ui.output_plot("biplot", height="400px"),
-        ui.h5("Loadings"),
-        ui.output_data_frame("loadings"),
         download_result_ui("dl"),
+        # Tier 2 -- what the components are made of, and how many to keep.
+        supporting(
+            "Component loadings",
+            ui.output_data_frame("loadings"),
+        ),
+        supporting(
+            "How many components? (scree plot)",
+            ui.output_plot("scree_plot", height=PLOT_HEIGHT),
+        ),
+        # Tier 3.
+        diagnostics(
+            "Biplot",
+            ui.output_plot("biplot", height=PLOT_HEIGHT),
+        ),
         ui.p("PCA reveals structure in your data. It's exploratory — not predictive.", class_="text-muted small mt-2"),
         code_panel_ui("code"),
     )

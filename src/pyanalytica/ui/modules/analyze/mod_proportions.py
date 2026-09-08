@@ -11,6 +11,7 @@ from pyanalytica.analyze.proportions import (
     chi_square_test, goodness_of_fit_test, one_proportion_ztest, two_proportion_ztest,
 )
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
@@ -243,8 +244,12 @@ def proportions_server(input, output, session, state: WorkbenchState, get_curren
             return ui.div(
                 ui.h5("Observed"),
                 ui.output_data_frame("observed"),
-                ui.h5("Expected"),
-                ui.output_data_frame("expected"),
+                # Tier 2: the expected counts explain the statistic rather than
+                # state the result.
+                supporting(
+                    "Expected counts (if the variables were unrelated)",
+                    ui.output_data_frame("expected"),
+                ),
             )
         else:  # goodness_of_fit
             return ui.div(

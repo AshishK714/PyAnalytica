@@ -121,6 +121,19 @@ def _click_button(page: Page, selector: str, *, timeout: float = 10_000) -> None
     btn.click()
 
 
+def _open_section(page: Page, title: str, *, timeout: float = 10_000) -> None:
+    """Open a disclosure section by its title.
+
+    Content inside a closed section is attached but never drawn, so an
+    assertion about it has to open the section first or it passes vacuously.
+    """
+    button = page.locator(f".accordion-button:has-text('{title}')")
+    button.first.wait_for(state="visible", timeout=timeout)
+    if button.first.get_attribute("aria-expanded") != "true":
+        button.first.click()
+        time.sleep(2.5)
+
+
 def _nav_to(page: Page, *tab_labels: str, timeout: float = 10_000) -> None:
     """
     Navigate through Shiny's navbar and sub-tabs by visible label text.
@@ -1177,9 +1190,11 @@ class TestModelCluster:
         expect(summary).to_be_attached()
         page.wait_for_selector(f"{_sid('cluster', 'cluster_summary')} .alert", timeout=20_000)
 
-        # Scatter plot should appear
-        scatter = page.locator(_sid("cluster", "scatter_plot"))
-        expect(scatter).to_be_attached()
+        # The scatter plot is tier 2 now: attached while closed, so requiring
+        # the image means opening the section first.
+        _open_section(page, "Cluster scatter plot")
+        scatter = page.locator(f"{_sid('cluster', 'scatter_plot')} img")
+        expect(scatter).to_be_visible(timeout=20_000)
 
         _assert_no_shiny_errors(page)
 
@@ -1218,8 +1233,9 @@ class TestModelReduce:
             f"Expected PCA summary, got: {summary_text[:300]}"
 
         # Scree plot
-        scree = page.locator(_sid("reduce", "scree_plot"))
-        expect(scree).to_be_attached()
+        _open_section(page, "How many components?")
+        scree = page.locator(f"{_sid('reduce', 'scree_plot')} img")
+        expect(scree).to_be_visible(timeout=20_000)
 
         _assert_no_shiny_errors(page)
 

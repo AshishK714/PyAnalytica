@@ -20,11 +20,11 @@ questions:
   - id: mean_bill
     text: "What is the mean of total_bill? (2 decimal places)"
     kind: numeric
-    answer: 25.29
+    answer: 19.79
     tolerance: 0.01
     hint: "Data > Profile lists the mean for every numeric column."
     explanation: >
-      About $25.29. Note this is the mean of a right-skewed column -- the
+      About $19.79. Note this is the mean of a right-skewed column -- the
       median is lower, which is worth knowing before you quote an average.
 
   - id: max_bill
@@ -47,11 +47,11 @@ questions:
     options: ["Thur", "Fri", "Sat", "Sun"]
     answer: "Sat"
     hint: "Explore > Group By / Summarize, grouped by day, using count."
-    explanation: "Saturday, with 81 of the 244 meals."
+    explanation: "Saturday, with 87 of the 244 meals."
 
   - id: smokers
     text: "How many meals were at smoking tables?"
     kind: numeric
-    answer: 81
+    answer: 93
     tolerance: 1
     hint: "Group by smoker and count."

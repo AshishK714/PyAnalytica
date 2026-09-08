@@ -13,6 +13,7 @@ from pyanalytica.explore.simulate import (
     simulate_lln,
 )
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 
@@ -55,9 +56,13 @@ def simulate_ui():
         ),
         decimals_ui("dec"),
         ui.output_data_frame("stats_table"),
-        ui.tags.h6("Goodness-of-Fit Tests", class_="mt-3 mb-1"),
-        ui.output_data_frame("fit_table"),
         download_result_ui("dl"),
+        # Tier 3 -- someone simulating a distribution is usually not asking
+        # whether the sample passes a formal test of it.
+        diagnostics(
+            "Goodness-of-fit tests",
+            ui.output_data_frame("fit_table"),
+        ),
         code_panel_ui("code"),
     )
 

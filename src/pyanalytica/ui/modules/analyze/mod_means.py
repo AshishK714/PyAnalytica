@@ -13,6 +13,7 @@ from pyanalytica.analyze.means import (
 )
 from pyanalytica.analyze.normality import shapiro_wilk_test
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
@@ -44,7 +45,11 @@ def means_ui():
         decimals_ui("dec"),
         ui.output_data_frame("group_stats"),
         download_result_ui("dl"),
-        ui.output_ui("assumptions"),
+        # Tier 2 -- whether the test's conditions hold is a second question.
+        supporting(
+            "Assumption checks",
+            ui.output_ui("assumptions"),
+        ),
         code_panel_ui("code"),
     )
 

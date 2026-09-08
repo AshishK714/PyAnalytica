@@ -9,6 +9,7 @@ from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_groupable_columns
 from pyanalytica.explore.crosstab import create_crosstab
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.table_caption import table_caption
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
@@ -32,6 +33,7 @@ def crosstab_ui():
         ),
         ui.output_ui("chi2_result"),
         decimals_ui("dec"),
+        ui.output_ui("what_the_numbers_are"),
         ui.output_data_frame("crosstab_table"),
         download_result_ui("dl"),
         code_panel_ui("code"),
@@ -68,6 +70,14 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
         state.codegen.record(ct_result.code, action="explore", description="Cross-tabulation")
         last_code.set(ct_result.code.code)
         return ct_result
+
+    @render.ui
+    def what_the_numbers_are():
+        req(result() is not None)
+        return ui.tags.p(
+            table_caption(input.normalize() or None, margins=input.margins()),
+            class_="text-muted small mb-2",
+        )
 
     @render.ui
     def chi2_result():

@@ -292,15 +292,19 @@ def time_series(
     ax.set_xlabel(date_col)
     ax.set_ylabel(value_col)
     plt.xticks(rotation=45, ha="right")
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     if notes:
         # On the figure, not in a toast: the assumption travels with the chart
         # into the report, the export and the screenshot.
-        fig.subplots_adjust(bottom=0.28)
-        fig.text(
-            0.01, 0.01, "  ".join(notes),
-            fontsize=8, style="italic", color="#555555", va="bottom",
+        #
+        # supxlabel rather than a figure-coordinate text box: the layout engine
+        # reserves room for it and moves it when the browser resizes the figure,
+        # where a fixed 0.01/0.01 placement plus subplots_adjust would be
+        # overridden by the engine and end up under the axis.
+        fig.supxlabel(
+            "  ".join(notes),
+            fontsize=8, style="italic", color="#555555",
         )
 
     code_lines.extend([

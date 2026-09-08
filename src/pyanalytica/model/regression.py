@@ -148,13 +148,13 @@ def linear_regression(
     ax.set_xlabel("Fitted Values")
     ax.set_ylabel("Residuals")
     ax.set_title("Residuals vs Fitted")
-    fig_resid.tight_layout()
+    fig_resid.set_layout_engine("tight")
 
     # QQ plot
     fig_qq, ax_qq = plt.subplots(figsize=(8, 5))
     stats.probplot(residuals, dist="norm", plot=ax_qq)
     ax_qq.set_title("Normal Q-Q Plot")
-    fig_qq.tight_layout()
+    fig_qq.set_layout_engine("tight")
 
     # Interpretation
     if test_r_sq is None:

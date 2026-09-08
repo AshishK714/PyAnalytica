@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import warnings
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -161,6 +163,32 @@ def _param_str(dist_name: str, params: dict) -> str:
         return ", ".join(f"{k}={v}" for k, v in params.items())
 
 
+def _describe(dist) -> str:
+    """Name the distribution being tested, the way the sidebar names it."""
+    try:
+        name = dist.dist.name
+        args = ", ".join(f"{v:g}" for v in dist.args) if dist.args else ""
+        kwds = ", ".join(f"{k}={v:g}" for k, v in dist.kwds.items())
+        shown = ", ".join(part for part in (args, kwds) if part)
+        return f"{name}({shown})" if shown else name
+    except Exception:
+        return "the distribution you specified"
+
+
+def _verdict(p: float, alpha: float = 0.05) -> str:
+    """Say what a p-value licenses, and no more.
+
+    "Fail to reject H0 (good fit)" reads as evidence the distribution matches.
+    It is not: it is the absence of evidence against it, and a small sample
+    fails to reject almost anything. The distinction is the whole point of the
+    panel, so the wording carries it.
+    """
+    shown = "p < .0001" if p < 0.0001 else f"p = {p:.4f}"
+    if p >= alpha:
+        return f"No evidence against H0 ({shown})"
+    return f"Reject H0 at 5% ({shown})"
+
+
 def _goodness_of_fit(samples: np.ndarray, dist, is_discrete: bool) -> pd.DataFrame:
     """Run goodness-of-fit tests: KS for continuous, Chi-square for discrete."""
     rows: list[dict] = []
@@ -194,20 +222,22 @@ def _goodness_of_fit(samples: np.ndarray, dist, is_discrete: bool) -> pd.DataFra
         chi2_stat, chi2_p = stats.chisquare(obs, f_exp=exp)
         rows.append({
             "Test": "Chi-square Goodness-of-Fit",
+            "Null hypothesis (H0)": f"The sample came from {_describe(dist)}",
             "Statistic": float(chi2_stat),
             "p-value": float(chi2_p),
-            "Result": "Fail to reject H0 (good fit)" if chi2_p >= 0.05
-                      else "Reject H0 (poor fit)",
+            "Result": _verdict(chi2_p),
         })
     else:
         # Kolmogorov-Smirnov test
+        # Valid here, and only here: the null distribution is the one the user
+        # specified, with no parameter estimated from the sample being tested.
         ks_stat, ks_p = stats.kstest(samples, dist.cdf)
         rows.append({
             "Test": "Kolmogorov-Smirnov",
+            "Null hypothesis (H0)": f"The sample came from {_describe(dist)}",
             "Statistic": float(ks_stat),
             "p-value": float(ks_p),
-            "Result": "Fail to reject H0 (good fit)" if ks_p >= 0.05
-                      else "Reject H0 (poor fit)",
+            "Result": _verdict(ks_p),
         })
 
     # Anderson-Darling for normality (always useful context)
@@ -221,10 +251,17 @@ def _goodness_of_fit(samples: np.ndarray, dist, is_discrete: bool) -> pd.DataFra
         ad_cv = float(ad_result.critical_values[2])
         rows.append({
             "Test": "Anderson-Darling (normality)",
+            "Null hypothesis (H0)": "The sample came from a normal distribution",
             "Statistic": ad_stat,
+            # This test has no p-value: it is judged against tabulated critical
+            # values. An empty cell reads as a number that failed to compute, so
+            # the Result column says how the call was made instead.
             "p-value": float("nan"),
-            "Result": f"{'Not normal' if ad_stat > ad_cv else 'Consistent with normal'}"
-                      f" (5% critical value = {ad_cv:.4f})",
+            "Result": (
+                f"{'Reject H0 at 5%' if ad_stat > ad_cv else 'No evidence against H0'}"
+                f" -- statistic {ad_stat:.4f} vs 5% critical value {ad_cv:.4f}"
+                f" (this test uses critical values, not a p-value)"
+            ),
         })
     except Exception:
         pass
@@ -241,25 +278,38 @@ def _normality_test(samples: np.ndarray) -> pd.DataFrame:
     sw_stat, sw_p = stats.shapiro(test_data)
     rows.append({
         "Test": "Shapiro-Wilk (normality of means)",
+        "Null hypothesis (H0)": "The sample means came from a normal distribution",
         "Statistic": float(sw_stat),
         "p-value": float(sw_p),
-        "Result": "Fail to reject H0 (normal)" if sw_p >= 0.05
-                  else "Reject H0 (not normal)",
+        "Result": _verdict(sw_p) + (
+            f" -- computed on {len(test_data):,} of {len(samples):,} values"
+            if len(test_data) < len(samples) else ""
+        ),
     })
 
-    # KS test against fitted normal
-    mu, sigma = float(np.mean(samples)), float(np.std(samples, ddof=1))
-    # Pass a frozen distribution rather than ("norm", args=(mu, sigma)).
-    # Newer scipy resolves the "norm" string to the fast scipy.special.ndtr
-    # shortcut, which accepts no loc/scale arguments, so the args form raises
-    # TypeError there. A frozen cdf behaves identically on every version.
-    ks_stat, ks_p = stats.kstest(samples, stats.norm(loc=mu, scale=sigma).cdf)
+    # Anderson-Darling, whose critical values for dist="norm" are the ones
+    # adjusted for a mean and variance estimated from the sample. A plain KS
+    # test against a normal fitted to the same data used to sit here; that is
+    # the Lilliefors situation, its p-value is far too large, and over 3000
+    # replications it rejected 0.0% of the time where 5% is correct. It called
+    # gamma(2, 2) data "consistent with normal" at p = 0.116 while Shapiro-Wilk
+    # gave 6e-08 on the same sample, so it has been removed rather than
+    # explained away.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ad = stats.anderson(samples, dist="norm")
+    ad_stat = float(ad.statistic)
+    ad_cv = float(ad.critical_values[2])
     rows.append({
-        "Test": "Kolmogorov-Smirnov (vs Normal)",
-        "Statistic": float(ks_stat),
-        "p-value": float(ks_p),
-        "Result": "Fail to reject H0 (normal)" if ks_p >= 0.05
-                  else "Reject H0 (not normal)",
+        "Test": "Anderson-Darling (normality of means)",
+        "Null hypothesis (H0)": "The sample means came from a normal distribution",
+        "Statistic": ad_stat,
+        "p-value": float("nan"),
+        "Result": (
+            f"{'Reject H0 at 5%' if ad_stat > ad_cv else 'No evidence against H0'}"
+            f" -- statistic {ad_stat:.4f} vs 5% critical value {ad_cv:.4f}"
+            f" (this test uses critical values, not a p-value)"
+        ),
     })
 
     return pd.DataFrame(rows)
@@ -377,7 +427,7 @@ def simulate_distribution(
     ax.set_xlabel("Value")
     ax.set_ylabel("Density")
     ax.legend()
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     # --- Code snippet ---
     seed_str = f"\nrng = np.random.default_rng({seed})" if seed is not None else "\nrng = np.random.default_rng()"
@@ -483,7 +533,7 @@ def simulate_clt(
     ax2.legend(fontsize=8)
 
     fig.suptitle(f"Central Limit Theorem: {dist_name.title()}", fontsize=13, fontweight="bold")
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     interpretation = (
         f"The Central Limit Theorem states that the sampling distribution of the mean "
@@ -574,7 +624,7 @@ def simulate_lln(
     ax.set_xlabel("Number of Observations")
     ax.set_ylabel("Running Mean")
     ax.legend()
-    fig.tight_layout(pad=1.5)
+    fig.set_layout_engine("tight", pad=1.5)
 
     interpretation = (
         f"The Law of Large Numbers states that as the number of observations increases, "

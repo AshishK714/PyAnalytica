@@ -38,7 +38,7 @@ def _explain(message: str) -> Figure:
         0.5, 0.5, textwrap.fill(message, width=64),
         ha="center", va="center", fontsize=11, color="#444444", wrap=True,
     )
-    fig.tight_layout()
+    fig.set_layout_engine("tight")
     return fig
 
 

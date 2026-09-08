@@ -61,7 +61,7 @@ def kmeans_cluster(
     ax.set_xlabel("Number of Clusters (k)")
     ax.set_ylabel("Inertia (Within-cluster Sum of Squares)")
     ax.set_title("Elbow Plot")
-    fig_elbow.tight_layout()
+    fig_elbow.set_layout_engine("tight")
 
     # Choose k
     if chosen_k is None:
@@ -88,7 +88,7 @@ def kmeans_cluster(
         ax2.set_ylabel(f"{features[1]} (scaled)")
         ax2.set_title(f"K-Means Clusters (k={chosen_k})")
         plt.colorbar(scatter, ax=ax2, label="Cluster")
-        fig_scatter.tight_layout()
+        fig_scatter.set_layout_engine("tight")
 
     feats_str = repr(features)
     code = (
@@ -144,7 +144,7 @@ def hierarchical_cluster(
         ax.set_ylabel(f"{features[1]} (scaled)")
         ax.set_title(f"Hierarchical Clusters (n={n_clusters})")
         plt.colorbar(scatter, ax=ax, label="Cluster")
-        fig_scatter.tight_layout()
+        fig_scatter.set_layout_engine("tight")
 
     feats_str = repr(features)
     code = (

@@ -8,6 +8,7 @@ from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.model.cluster import hierarchical_cluster, kmeans_cluster
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
 from pyanalytica.ui.components.selects import (
@@ -27,13 +28,23 @@ def cluster_ui():
             ui.input_action_button("run_btn", "Run Clustering", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Tier 1 -- the clusters and what is in them.
         ui.output_ui("guidance"),
         ui.output_ui("cluster_summary"),
-        ui.output_plot("elbow_plot", height="350px"),
-        ui.output_plot("scatter_plot", height="350px"),
-        ui.h5("Cluster Profiles"),
+        ui.output_ui("profiles_heading"),
         ui.output_data_frame("profiles"),
         download_result_ui("dl"),
+        # Tier 2 -- where they sit.
+        supporting(
+            "Cluster scatter plot",
+            ui.output_plot("scatter_plot", height=PLOT_HEIGHT),
+        ),
+        # Tier 3 -- how many clusters to use is a different question from what
+        # the clusters are.
+        diagnostics(
+            "Choosing k (elbow plot)",
+            ui.output_plot("elbow_plot", height=PLOT_HEIGHT),
+        ),
         code_panel_ui("code"),
     )
 
@@ -129,6 +140,13 @@ def cluster_server(input, output, session, state: WorkbenchState, get_current_df
         r = result()
         req(r is not None and r.scatter_plot is not None)
         return r.scatter_plot
+
+    @render.ui
+    def profiles_heading():
+        # Rendered with the table, not above it: a static heading announces a
+        # table that may not be there.
+        req(result() is not None)
+        return ui.h5("Cluster Profiles")
 
     @render.data_frame
     def profiles():

@@ -34,6 +34,7 @@ from tests.test_e2e import (  # reuse the harness
     _assert_output_has_content,
     _click_button,
     _nav_to,
+    _open_section,
     _select_multiple,
     _select_option,
     _sid,
@@ -257,7 +258,9 @@ class TestPracticeDrills:
         _nav_to(page, "Practice")
         _wait_stable(page, 2500)
 
-        page.locator(_sid("practice", "ans_mean_bill")).fill("19.79")
+        # 25.29 was the answer under the simulated tips data; against the
+        # real data it is wrong, which is what this test needs.
+        page.locator(_sid("practice", "ans_mean_bill")).fill("25.29")
         _click_button(page, _sid("practice", "check_mean_bill"))
         _wait_stable(page, 2000)
 
@@ -425,6 +428,7 @@ class TestClusterAndReduceExplainThemselves:
 
         assert not self._guidance(page, "cluster"), "guidance should clear once the run is valid"
         _assert_output_has_content(page, _sid("cluster", "profiles"), kind="table")
+        _open_section(page, "Cluster scatter plot")
         assert page.locator(f"{_sid('cluster', 'scatter_plot')} img").count()
         _assert_no_shiny_errors(page)
 
@@ -437,7 +441,9 @@ class TestClusterAndReduceExplainThemselves:
         _wait_stable(page, 6000)
 
         assert not self._guidance(page, "reduce")
+        _open_section(page, "Component loadings")
         _assert_output_has_content(page, _sid("reduce", "loadings"), kind="table")
+        _open_section(page, "How many components?")
         assert page.locator(f"{_sid('reduce', 'scree_plot')} img").count(), "no scree plot"
         _assert_no_shiny_errors(page)
 
@@ -454,6 +460,9 @@ class TestClusterAndReduceExplainThemselves:
         _select_multiple(page, _sid("reduce", "features"), ["Age", "Fare", "Pclass"])
         _click_button(page, _sid("reduce", "run_btn"))
         _wait_stable(page, 6000)
+        # Opened once and left open, so the second half of this test can tell a
+        # cleared result from a closed section.
+        _open_section(page, "How many components?")
         assert page.locator(f"{_sid('reduce', 'scree_plot')} img").count()
 
         page.evaluate(

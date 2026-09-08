@@ -8,8 +8,9 @@ import pandas as pd
 from shiny import module, reactive, render, req, ui
 
 from pyanalytica.core.state import WorkbenchState
-from pyanalytica.model.evaluate import evaluate_classification
+from pyanalytica.model.evaluate import evaluate_classification, evaluate_regression
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
 from pyanalytica.ui.components.selects import (
@@ -39,11 +40,27 @@ def evaluate_ui():
             ui.output_ui("threshold_ui"),
             width=300,
         ),
+        # Tier 1 -- how the model did. Which numbers those are depends on the
+        # kind of model; the panel used to assume classification and hand a
+        # regression to sklearn, which answered "continuous is not supported".
         ui.output_ui("metrics_summary"),
-        ui.h5("Confusion Matrix"),
+        ui.output_ui("cm_heading"),
         ui.output_data_frame("cm_table"),
+        ui.output_data_frame("regression_table"),
         download_result_ui("dl"),
-        ui.output_plot("roc_plot", height="400px"),
+        # Tier 2 -- whichever of these the model has.
+        supporting(
+            "ROC curve",
+            ui.output_plot("roc_plot", height=PLOT_HEIGHT),
+        ),
+        supporting(
+            "Predicted vs actual",
+            ui.output_plot("pred_vs_actual", height=PLOT_HEIGHT),
+        ),
+        supporting(
+            "Residuals",
+            ui.output_plot("resid_plot", height=PLOT_HEIGHT),
+        ),
         code_panel_ui("code"),
     )
 
@@ -54,6 +71,7 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
     eval_result = reactive.value(None)
     is_binary = reactive.value(False)
     last_threshold = reactive.value(None)
+    reg_result = reactive.value(None)
     baseline_rate = reactive.value(None)
 
     @reactive.effect
@@ -96,6 +114,26 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
                 return
 
             y_true = np.asarray(y_encoded)
+
+            # A regression is scored against the same rows, with the measures
+            # that mean something for a continuous target.
+            if artifact.label_encoder is None and not hasattr(
+                artifact.model, "predict_proba"
+            ):
+                r = evaluate_regression(
+                    y_true,
+                    artifact.model.predict(X),
+                    target=artifact.target_name or "the target",
+                )
+                reg_result.set(r)
+                eval_result.set(None)
+                is_binary.set(False)
+                state.codegen.record(
+                    r.code, action="model", description="Regression evaluation"
+                )
+                last_code.set(r.code.code)
+                return
+            reg_result.set(None)
 
             # Get probabilities if available
             y_prob = None
@@ -152,6 +190,13 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
 
     @render.ui
     def metrics_summary():
+        reg = reg_result()
+        if reg is not None:
+            return ui.div(
+                ui.h5("Regression Metrics"),
+                ui.p(reg.interpretation),
+                class_="alert alert-info",
+            )
         r = eval_result()
         req(r is not None)
         auc_str = f" | AUC = {r.auc:.4f}" if r.auc is not None else ""
@@ -179,6 +224,31 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
             class_="alert alert-info",
         )
 
+    @render.ui
+    def cm_heading():
+        # This heading used to be static, so a failed evaluation left
+        # "Confusion Matrix" standing over an empty page.
+        req(eval_result() is not None)
+        return ui.h5("Confusion Matrix")
+
+    @render.data_frame
+    def regression_table():
+        r = reg_result()
+        req(r is not None)
+        return render.DataGrid(r.summary)
+
+    @render.plot
+    def pred_vs_actual():
+        r = reg_result()
+        req(r is not None and r.predicted_vs_actual is not None)
+        return r.predicted_vs_actual
+
+    @render.plot
+    def resid_plot():
+        r = reg_result()
+        req(r is not None and r.residual_plot is not None)
+        return r.residual_plot
+
     @render.data_frame
     def cm_table():
         r = eval_result()
@@ -193,7 +263,10 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
 
     download_result_server(
         "dl",
-        get_df=lambda: eval_result().confusion_matrix.reset_index(),
+        get_df=lambda: (
+            reg_result().summary if reg_result() is not None
+            else eval_result().confusion_matrix.reset_index()
+        ),
         filename="confusion_matrix",
     )
     code_panel_server("code", get_code=last_code)

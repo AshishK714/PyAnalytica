@@ -178,3 +178,66 @@ class TestEvaluateThreshold:
             f"raising the threshold should call fewer positives and lower recall; "
             f"got {recall(at_half)} at 0.5 and {recall(at_nine)} at 0.9"
         )
+
+class TestEvaluatingARegression:
+    """Model > Evaluate used to hand a regression to sklearn's classification
+    metrics, which answered "continuous is not supported" -- a message naming a
+    scikit-learn target type, under a "Confusion Matrix" heading, with the
+    metrics area blank.
+
+    Refusing those models would have been the smaller fix and the wrong one:
+    checking a regression against held-out rows is a reasonable thing to want,
+    and this is where a student looks for it.
+    """
+
+    def test_t07_fit_a_regression(self, page: Page):
+        _nav_to(page, "Model", "Regression")
+        _wait_stable(page, 2000)
+        page.wait_for_selector(
+            f"{_sid('regression', 'target')} option:not([value=''])",
+            state="attached", timeout=15_000,
+        )
+        _select_option(page, _sid("regression", "target"), "Age")
+        _select_multiple(page, _sid("regression", "features"), ["Fare", "Pclass"])
+        page.locator(_sid("regression", "test_size")).evaluate(
+            """el => { const i = window.jQuery(el).data('ionRangeSlider');
+                       if (i) i.update({from: 0.3}); window.jQuery(el).trigger('change'); }"""
+        )
+        _wait_stable(page, 1000)
+        page.locator(_sid("regression", "model_name")).fill("age_model")
+        _wait_stable(page)
+        _click_button(page, _sid("regression", "run_btn"))
+        _wait_stable(page, 7000)
+
+    def test_t08_evaluating_it_reports_regression_measures(self, page: Page):
+        _nav_to(page, "Model", "Evaluate")
+        _wait_stable(page, 2500)
+        _select_option(page, _sid("evaluate", "model_name"), "age_model")
+        _click_button(page, _sid("evaluate", "run_btn"))
+        _wait_stable(page, 6000)
+
+        text = _metrics(page)
+        assert "R" in text and "rows" in text, f"no regression summary: {text!r}"
+        assert "continuous is not supported" not in page.locator("body").inner_text()
+
+    def test_t09_the_measures_are_the_ones_that_mean_something(self, page: Page):
+        table = page.locator(_sid("evaluate", "regression_table"))
+        expect(table).to_be_visible(timeout=20_000)
+        body = table.inner_text().upper()
+        for measure in ("RMSE", "MAE", "ROWS"):
+            assert measure in body, f"{measure} missing from {body[:200]!r}"
+
+    def test_t10_no_confusion_matrix_is_offered_for_a_regression(self, page: Page):
+        """The heading is dynamic now, so it does not stand over nothing."""
+        assert "Confusion Matrix" not in page.locator("body").inner_text()
+
+    def test_t11_the_regression_plots_are_offered_not_forced(self, page: Page):
+        body = page.locator("body").inner_text()
+        assert "Predicted vs actual" in body
+        assert page.locator(f"{_sid('evaluate', 'pred_vs_actual')} img").count() == 0
+
+        page.locator(".accordion-button:has-text('Predicted vs actual')").first.click()
+        _wait_stable(page, 4000)
+        expect(page.locator(f"{_sid('evaluate', 'pred_vs_actual')} img")).to_be_visible(
+            timeout=20_000
+        )
