@@ -177,3 +177,36 @@ class TestProgress:
         p.record("a", True)   # re-answering does not double count
         assert p.attempted == 2
         assert p.correct == 1
+
+
+class TestExplanationsAgreeWithAnswers:
+    """An explanation that quotes a different number than the answer.
+
+    When the bundled datasets were replaced with the real ones, every numeric
+    answer was recomputed and the tests passed -- while the explanations still
+    said "69.6% of women survived" and "About $25.29". Nothing checked the
+    prose, so a student reading the feedback was told the answer they had just
+    got right was something else.
+    """
+
+    @pytest.mark.parametrize("drill_id", ["tips_basics", "titanic_basics"])
+    def test_a_numeric_explanation_quotes_its_own_answer(self, drill_id):
+        import re
+
+        drill = load_bundled_drill(drill_id)
+        contradictions = []
+        for question in drill.questions:
+            if question.kind != "numeric" or not question.explanation:
+                continue
+            quoted = re.findall(r"\d+(?:\.\d+)?", question.explanation)
+            if not quoted:
+                continue
+            answer = float(question.answer)
+            # The explanation may mention other figures -- a comparison, a
+            # denominator -- but the answer itself should be among them.
+            if not any(abs(float(n) - answer) < 0.011 for n in quoted):
+                contradictions.append(
+                    f"{drill_id}.{question.id}: answer is {question.answer}, "
+                    f"but the explanation quotes {quoted}"
+                )
+        assert not contradictions, "\n  ".join(contradictions)

@@ -15,35 +15,35 @@ questions:
   - id: missing_age
     text: "How many passengers have no Age recorded?"
     kind: numeric
-    answer: 178
+    answer: 177
     tolerance: 1
     hint: "Data > Profile reports missing counts per column."
     explanation: >
-      178 of 891 -- about 20%. Any mean age you calculate silently ignores
+      177 of 891 -- about 20%. Any mean age you calculate silently ignores
       those passengers, which is worth stating whenever you report it.
 
   - id: mean_age
     text: "What is the mean Age, to 2 decimal places?"
     kind: numeric
-    answer: 29.46
+    answer: 29.70
     tolerance: 0.01
-    explanation: "29.46, calculated from the 713 passengers who have an age."
+    explanation: "29.70, calculated from the 714 passengers who have an age."
 
   - id: survivors
     text: "How many passengers survived?"
     kind: numeric
-    answer: 438
+    answer: 342
     tolerance: 1
     hint: "Survived is 1 for survived, 0 for not -- so summing it counts them."
 
   - id: female_rate
     text: "What percentage of female passengers survived? (1 decimal place)"
     kind: numeric
-    answer: 69.6
+    answer: 74.2
     tolerance: 0.1
     hint: "Group by Sex and take the mean of Survived, then multiply by 100."
     explanation: >
-      69.6% of women survived against 37.3% of men. Grouping turned a single
+      74.2% of women survived against 18.9% of men. Grouping turned a single
       average into the most important fact in the dataset.
 
   - id: biggest_class
