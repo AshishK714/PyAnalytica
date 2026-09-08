@@ -10,6 +10,7 @@ from shiny import module, reactive, render, req, ui
 from pyanalytica.core.state import WorkbenchState
 from pyanalytica.model.evaluate import evaluate_classification
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
 from pyanalytica.ui.components.selects import (
@@ -39,11 +40,16 @@ def evaluate_ui():
             ui.output_ui("threshold_ui"),
             width=300,
         ),
+        # Tier 1 -- the metrics and what the model got right and wrong.
         ui.output_ui("metrics_summary"),
-        ui.h5("Confusion Matrix"),
+        ui.output_ui("cm_heading"),
         ui.output_data_frame("cm_table"),
         download_result_ui("dl"),
-        ui.output_plot("roc_plot", height="400px"),
+        # Tier 2.
+        supporting(
+            "ROC curve",
+            ui.output_plot("roc_plot", height=PLOT_HEIGHT),
+        ),
         code_panel_ui("code"),
     )
 
@@ -178,6 +184,13 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
             ui.tags.small(" ".join(notes), class_="text-muted") if notes else None,
             class_="alert alert-info",
         )
+
+    @render.ui
+    def cm_heading():
+        # This heading used to be static, so a failed evaluation left
+        # "Confusion Matrix" standing over an empty page.
+        req(eval_result() is not None)
+        return ui.h5("Confusion Matrix")
 
     @render.data_frame
     def cm_table():

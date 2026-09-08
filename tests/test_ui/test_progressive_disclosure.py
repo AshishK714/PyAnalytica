@@ -37,21 +37,17 @@ MAX_UNCONDITIONAL_PLOTS = 1
 MAX_UNCONDITIONAL_OUTPUTS = 4
 
 #: Panels converted to the tiering. These are held to the full rules.
-CONVERTED = {"regression"}
+CONVERTED = {
+    "regression", "cluster", "reduce", "evaluate", "simulate",
+    "proportions", "means",
+}
 
 #: The rest of the agreed tiering from docs/DISCLOSURE.md, with the tier-2 or
 #: tier-3 content that still renders unconditionally. A count alone cannot
 #: express this -- Simulate's goodness-of-fit table is tier 3 whether it is one
 #: output or five -- so the checklist is written out and shrinks as panels move
 #: into CONVERTED.
-TO_CONVERT = {
-    "cluster": "elbow plot is tier 3; scatter is tier 2",
-    "reduce": "biplot is tier 3; scree and loadings are tier 2",
-    "evaluate": "ROC curve is tier 2",
-    "simulate": "goodness-of-fit tests are tier 3",
-    "proportions": "expected counts and residuals are tier 2",
-    "means": "assumption checks are tier 2",
-}
+TO_CONVERT: dict[str, str] = {}
 
 
 def _panels() -> list[Path]:
