@@ -35,6 +35,25 @@ number was labelled, or in a control that did nothing.
   name the column, show its values, and point at Data > Transform > Dummy
   Encode (One-Hot).
 
+### Fixed (Data > View)
+
+- **A filter that cannot mean anything is refused instead of answered.** Every
+  value typed into the filter box arrives as text, and the same mistake used to
+  produce three different results, none of them a message: `age == "Mobile"`
+  gave 0 rows, which reads as "no records match"; `age > "Mobile"` gave a raw
+  TypeError traceback; and `channel > "60"` gave **all 41,188 rows**, because
+  "Mobile" sorts after "60" alphabetically. The last is the dangerous one -- a
+  meaningless filter silently returned the whole dataset, and every count taken
+  afterwards was wrong while looking ordinary. All three now say which column
+  holds what, and what to do instead.
+- **The "in" filter reads numbers as numbers.** It was the one operator whose
+  values were not coerced to the column's type, so `age in 34, 41` matched
+  nothing while `age == 34` worked.
+- **A refused filter no longer empties the panel.** The check runs as the filter
+  is added, so a filter that cannot work never enters the list. Accepting it and
+  failing later took out the table, the row count and the download together,
+  with the reason shown nowhere.
+
 ### Changed
 
 - Accuracy is reported next to the majority-class baseline. On the campaign

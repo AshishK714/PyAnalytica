@@ -83,6 +83,18 @@ def test_no_bare_req_in_a_user_triggered_handler(path: Path):
     )
 
 
+def _is_forwarded_exception(node: ast.AST) -> bool:
+    """Is this message str(exc), or str(exc) with something added to it?"""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _is_forwarded_exception(node.left) or _is_forwarded_exception(node.right)
+    return (
+        isinstance(node, ast.Call)
+        and getattr(node.func, "id", "") == "str"
+        and len(node.args) == 1
+        and isinstance(node.args[0], ast.Name)
+    )
+
+
 @pytest.mark.parametrize("path", _module_files(), ids=lambda p: p.stem)
 def test_every_require_message_is_written_for_a_beginner(path: Path):
     """The message is the whole point, so check it is worth reading.
@@ -112,6 +124,15 @@ def test_every_require_message_is_written_for_a_beginner(path: Path):
             # A shared constant such as NO_DATASET; its wording is checked once
             # in test_the_shared_messages_are_sentences rather than at every
             # call site.
+            continue
+        elif _is_forwarded_exception(message):
+            # require(False, str(exc)) forwards a message the library composed,
+            # e.g. Timeline refusing a date axis or View refusing a filter that
+            # cannot mean anything. Those sentences name the column, quote the
+            # offending values and say which screen fixes it -- more than a
+            # literal here could -- and each is asserted in the tests for the
+            # function that raises it. Judging them from this file would mean
+            # reading the string that is not here.
             continue
         else:
             text = ast.unparse(message)
