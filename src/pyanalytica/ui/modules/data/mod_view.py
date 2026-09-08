@@ -7,7 +7,12 @@ from shiny import module, reactive, render, req, ui
 from pyanalytica.core import round_df
 from pyanalytica.core.codegen import CodeSnippet
 from pyanalytica.core.state import Operation, WorkbenchState
-from pyanalytica.data.view import FilterCondition, apply_filters, sort_dataframe
+from pyanalytica.data.view import (
+    FilterCondition,
+    apply_filters,
+    check_filter,
+    sort_dataframe,
+)
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
@@ -81,6 +86,17 @@ def view_server(input, output, session, state: WorkbenchState, get_current_df):
         if not require(col, "Choose the column to filter on first."):
             return
         f = FilterCondition(column=col, operator=op, value=val)
+        # Check before the filter joins the list. A filter that cannot mean
+        # anything used to be accepted and then break every output that read
+        # the frame -- the table, the row count, the download -- so the panel
+        # emptied and the reason appeared nowhere.
+        df = get_current_df()
+        try:
+            if df is not None:
+                check_filter(df, f)
+        except ValueError as exc:
+            require(False, str(exc))
+            return
         current = filters()
         filters.set(current + [f])
 
@@ -95,7 +111,13 @@ def view_server(input, output, session, state: WorkbenchState, get_current_df):
         req(df is not None)
         fs = filters()
         if fs:
-            df, snippet = apply_filters(df, fs)
+            try:
+                df, snippet = apply_filters(df, fs)
+            except ValueError as exc:
+                # The dataset changed under a filter that no longer fits it.
+                require(False, str(exc) + " The filter has been removed.")
+                filters.set([])
+                return get_current_df()
             last_code.set(snippet.code)
         sort_col = input.sort_col()
         if sort_col:
