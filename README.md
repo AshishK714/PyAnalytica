@@ -6,9 +6,9 @@
 
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776ab?logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.7.1-667eea.svg)](https://pypi.org/project/pyanalytica/)
+[![Version](https://img.shields.io/badge/version-0.7.2-667eea.svg)](https://pypi.org/project/pyanalytica/)
 [![Shiny](https://img.shields.io/badge/built%20with-Shiny%20for%20Python-764ba2.svg)](https://shiny.posit.co/py/)
-[![Tests](https://img.shields.io/badge/tests-880%20passing-22c55e.svg)]()
+[![Tests](https://img.shields.io/badge/tests-901%20passing-22c55e.svg)]()
 
 *Interactive data exploration, visualization, statistical analysis, and machine learning — with a "Show Code" button that reveals the pandas & sklearn code behind every operation.*
 
