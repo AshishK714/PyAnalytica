@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+from pyanalytica.ui.components.status import status_server, status_ui
+
 from shiny import module, reactive, render, req, ui
 
 from pyanalytica.core.report_builder import CellType
@@ -211,6 +213,9 @@ def report_builder_ui():
             ),
             class_="border-bottom pb-2 mb-2",
         ),
+        # Under the toolbar, above the cells: this panel has no sidebar, and a
+        # message about a build belongs next to what was built.
+        status_ui("status"),
         # --- Cell editor (full width, no tabs) ---
         ui.div(
             ui.output_ui("cell_editor"),
@@ -223,6 +228,7 @@ def report_builder_ui():
 def report_builder_server(input, output, session, state: WorkbenchState, get_current_df):
     builder = state.report_builder
     refresh = reactive.value(0)
+    status = status_server("status")
 
     # Wire up reactive signal so external "Add to Report" additions trigger refresh
     state._report_change_signal = reactive.value(0)
@@ -258,10 +264,10 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
         recorder = state.procedure_recorder
         steps = recorder.get_steps()
         if not steps:
-            ui.notification_show("No procedure steps to import. Record some steps first.", type="warning")
+            status.check("No procedure steps to import. Record some steps first.")
             return
         count = builder.import_from_recorder(recorder)
-        ui.notification_show(f"Imported {count} code cells from procedure.", type="message")
+        status.done(f"Imported {count} code cells from procedure.")
         _bump()
 
     # --- Run All Cells ---
@@ -269,7 +275,7 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
     @reactive.event(input.run_all)
     def _run_all():
         if builder.cell_count() == 0:
-            ui.notification_show("No cells to run.", type="warning")
+            status.check("No cells to run.")
             return
         df = get_current_df()
         messages = builder.execute_all(df)
@@ -278,7 +284,10 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
         summary = f"Executed {ok + err} cells: {ok} OK"
         if err:
             summary += f", {err} errors"
-        ui.notification_show(summary, type="message" if err == 0 else "warning")
+        if err:
+            status.check(summary)
+        else:
+            status.done(summary)
         _bump()
 
     # --- Add cells ---
@@ -350,7 +359,7 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
     @reactive.event(input.preview_btn)
     def _show_preview():
         if builder.cell_count() == 0:
-            ui.notification_show("No cells to preview.", type="warning")
+            status.check("No cells to preview.")
             return
         builder.title = input.rpt_title().strip() or "PyAnalytica Report"
         builder.author = input.rpt_author().strip()
@@ -384,13 +393,12 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
             builder.import_json(json_str)
             ui.update_text("rpt_title", value=builder.title)
             ui.update_text("rpt_author", value=builder.author)
-            ui.notification_show(
-                f"Loaded report '{builder.title}' ({builder.cell_count()} cells).",
-                type="message",
+            status.done(
+                f"Loaded report '{builder.title}' ({builder.cell_count()} cells)."
             )
             _bump()
         except Exception as e:
-            ui.notification_show(f"Import error: {e}", type="error")
+            status.failed(str(e))
 
     # --- Cell Editor ---
     @render.ui

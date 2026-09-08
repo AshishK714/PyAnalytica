@@ -11,6 +11,7 @@ from pyanalytica.datasets import list_datasets
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 
 from datetime import datetime
 
@@ -28,6 +29,8 @@ def load_ui():
             width=300,
         ),
         ui.h4("Preview"),
+        # Above the output: a failure belongs where the result would be.
+        status_ui("status"),
         ui.output_text("load_info"),
         decimals_ui("dec"),
         ui.output_data_frame("preview_table"),
@@ -38,6 +41,7 @@ def load_ui():
 @module.server
 def load_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    status = status_server("status")
     get_dec = decimals_server("dec")
 
     @render.ui
@@ -84,9 +88,9 @@ def load_server(input, output, session, state: WorkbenchState, get_current_df):
             state.load(name, df)
             state.codegen.record(snippet)
             last_code.set(snippet.code)
-            ui.notification_show(f"Loaded '{name}': {df.shape[0]} rows, {df.shape[1]} columns", type="message")
+            status.done(f"Loaded '{name}': {df.shape[0]} rows, {df.shape[1]} columns")
         except Exception as e:
-            ui.notification_show(f"Error loading data: {e}", type="error")
+            status.failed(str(e))
 
     @render.text
     def load_info():

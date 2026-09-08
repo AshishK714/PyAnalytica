@@ -12,6 +12,7 @@ from pyanalytica.data import transform
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 
 from datetime import datetime
 
@@ -63,6 +64,8 @@ def transform_ui():
             ui.input_action_button("apply_btn", "Apply", class_="btn-primary w-100 mt-1"),
             width=300,
         ),
+        # Above the output: a failure belongs where the result would be.
+        status_ui("status"),
         ui.output_text("transform_info"),
         decimals_ui("dec"),
         ui.output_data_frame("preview"),
@@ -76,6 +79,7 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
     get_dec = decimals_server("dec")
     _prev_ds_id = reactive.value(None)
     _preview_result = reactive.value(None)  # (df, snippet) or None
+    status = status_server("status")
 
     @reactive.effect
     def _track_dataset_change():
@@ -300,13 +304,13 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
                 result_df, snippet = result
                 _preview_result.set((result_df, snippet))
                 last_code.set(snippet.code)
-                ui.notification_show(
-                    f"Preview: {result_df.shape[0]} rows x {result_df.shape[1]} cols",
-                    type="message",
+                status.done(
+                    f"Preview: {result_df.shape[0]} rows x {result_df.shape[1]} cols"
                 )
         except Exception as e:
             _preview_result.set(None)
-            ui.notification_show(f"Preview error: {e}", type="error")
+            _preview_result.set(None)
+            status.failed(str(e))
 
     @reactive.effect
     @reactive.event(input.apply_btn)
@@ -331,9 +335,8 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
                 col = input.col()
                 n_missing = df[col].isna().sum()
                 if n_missing == 0:
-                    ui.notification_show(
-                        f"Column '{col}' has no missing values. Nothing to fill.",
-                        type="warning",
+                    status.check(
+                        f"Column '{col}' has no missing values. Nothing to fill."
                     )
                     return
 
@@ -348,11 +351,11 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
                     state.codegen.record(snippet)
                     last_code.set(snippet.code)
                     _preview_result.set(None)
-                    ui.notification_show(f"Transform applied: {action}", type="message")
+                    status.done(f"Transform applied: {action}")
                     break
 
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            status.failed(str(e))
 
     @render.text
     def transform_info():

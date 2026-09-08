@@ -17,6 +17,7 @@ from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_u
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -44,6 +45,8 @@ def view_ui():
             ui.input_action_button("apply_btn", "Apply to Dataset", class_="btn-primary w-100"),
             width=300,
         ),
+        # Above the output: a failure belongs where the result would be.
+        status_ui("status"),
         ui.output_text("filter_info"),
         decimals_ui("dec"),
         ui.output_data_frame("view_table"),
@@ -55,6 +58,7 @@ def view_ui():
 @module.server
 def view_server(input, output, session, state: WorkbenchState, get_current_df):
     filters = reactive.value([])
+    status = status_server("status")
     last_code = reactive.value("")
     get_dec = decimals_server("dec")
     _prev_dataset_id = reactive.value(None)
@@ -158,7 +162,7 @@ def view_server(input, output, session, state: WorkbenchState, get_current_df):
                     snippet = CodeSnippet(code=code, imports=["import pandas as pd"])
                     state.codegen.record(snippet, action="filter",
                                          description=f"Applied filters to '{name}'")
-                ui.notification_show(f"Filters applied to '{name}'", type="message")
+                status.done(f"Filters applied to '{name}'")
                 break
 
     download_result_server("dl", get_df=filtered_df, filename="filtered_data")
