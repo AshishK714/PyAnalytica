@@ -217,13 +217,67 @@ def test_fit_test_good_fit_normal():
 
 
 def test_clt_normality_test():
-    """CLT fit test includes Shapiro-Wilk and KS normality tests."""
+    """CLT fit test uses the two tests that are valid for estimated parameters."""
     r = simulate_clt("normal", {"loc": 0, "scale": 1}, num_samples=500, seed=42)
     assert "Shapiro-Wilk (normality of means)" in r.fit_test["Test"].values
-    assert "Kolmogorov-Smirnov (vs Normal)" in r.fit_test["Test"].values
+    assert "Anderson-Darling (normality of means)" in r.fit_test["Test"].values
+
+
+def test_no_ks_test_against_a_normal_fitted_to_the_same_sample():
+    """The removed test, kept out deliberately.
+
+    Estimating the mean and standard deviation from the sample and then judging
+    the fit with the standard Kolmogorov-Smirnov null distribution is the
+    Lilliefors situation: the p-value comes out far too large. Measured over
+    3000 replications it rejected 0.0% of the time at alpha = 0.05, where 5% is
+    correct, and it called gamma(2, 2) data "consistent with normal" at
+    p = 0.116 while Shapiro-Wilk gave 6e-08 on the same sample.
+
+    Anderson-Darling covers the same ground properly, because scipy's critical
+    values for dist="norm" are the ones adjusted for estimated parameters.
+    """
+    r = simulate_clt("normal", {"loc": 0, "scale": 1}, num_samples=500, seed=42)
+    names = " ".join(r.fit_test["Test"].values)
+    assert "Kolmogorov-Smirnov" not in names
+
+
+def test_the_normality_tests_reject_data_that_is_not_normal():
+    """The failure the removed test could not produce."""
+    r = simulate_lln("exponential", {"scale": 2.0}, max_obs=3000, seed=7)
+    assert len(r.fit_test) >= 1
+
+
+def test_every_test_states_its_null_hypothesis():
+    """"Fail to reject H0" means nothing without H0."""
+    r = simulate_clt("normal", {"loc": 0, "scale": 1}, num_samples=500, seed=42)
+    assert "Null hypothesis (H0)" in r.fit_test.columns
+    for null in r.fit_test["Null hypothesis (H0)"]:
+        assert isinstance(null, str) and len(null) > 20, null
+
+
+def test_a_high_p_value_is_not_called_a_good_fit():
+    """Failing to reject is the absence of evidence against, not evidence for.
+
+    The old wording -- "Fail to reject H0 (good fit)" -- taught the
+    misinterpretation the panel exists to correct.
+    """
+    r = simulate_clt("normal", {"loc": 0, "scale": 1}, num_samples=500, seed=42)
+    results = " ".join(r.fit_test["Result"].values)
+    assert "good fit" not in results
+    assert "No evidence against H0" in results
+
+
+def test_anderson_darling_says_why_it_has_no_p_value():
+    """An empty p-value cell reads as a number that failed to compute."""
+    r = simulate_clt("normal", {"loc": 0, "scale": 1}, num_samples=500, seed=42)
+    row = r.fit_test[r.fit_test["Test"].str.contains("Anderson")].iloc[0]
+    assert "critical value" in row["Result"]
+    assert "not a p-value" in row["Result"]
 
 
 def test_lln_fit_test_columns():
     """LLN fit test has expected columns."""
     r = simulate_lln("exponential", {"scale": 2.0}, max_obs=3000, seed=42)
-    assert list(r.fit_test.columns) == ["Test", "Statistic", "p-value", "Result"]
+    assert list(r.fit_test.columns) == [
+        "Test", "Null hypothesis (H0)", "Statistic", "p-value", "Result",
+    ]

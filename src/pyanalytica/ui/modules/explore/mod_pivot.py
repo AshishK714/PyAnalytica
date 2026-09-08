@@ -8,6 +8,7 @@ from pyanalytica.core import round_df
 from pyanalytica.core.state import WorkbenchState
 from pyanalytica.explore.pivot import create_pivot_table
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.table_caption import table_caption
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
@@ -33,6 +34,7 @@ def pivot_ui():
             width=300,
         ),
         decimals_ui("dec"),
+        ui.output_ui("what_the_numbers_are"),
         ui.output_data_frame("pivot_table"),
         download_result_ui("dl"),
         code_panel_ui("code"),
@@ -78,6 +80,19 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
         state.codegen.record(snippet, action="explore", description="Pivot table")
         last_code.set(snippet.code)
         return result_df.reset_index()
+
+    @render.ui
+    def what_the_numbers_are():
+        req(result() is not None)
+        return ui.tags.p(
+            table_caption(
+                input.normalize() or None,
+                aggfunc=input.aggfunc(),
+                value_col=input.values(),
+                margins=input.margins(),
+            ),
+            class_="text-muted small mb-2",
+        )
 
     @render.data_frame
     def pivot_table():
