@@ -1,4 +1,11 @@
-"""Model evaluation — confusion matrix, ROC, AUC, profit curves, fairness."""
+"""Model evaluation for both kinds of model.
+
+Evaluate used to be classification-only while offering every saved model,
+so choosing a regression gave scikit-learn's "continuous is not supported"
+under a Confusion Matrix heading. Refusing those models would have been the
+smaller fix and the wrong one: checking a regression against held-out rows
+is a thing to want, and this is where a student looks for it.
+"""
 
 from __future__ import annotations
 
@@ -11,8 +18,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
-    accuracy_score, confusion_matrix, f1_score, precision_score,
-    recall_score, roc_auc_score, roc_curve,
+    accuracy_score, confusion_matrix, f1_score, mean_absolute_error,
+    mean_squared_error, precision_score, r2_score, recall_score,
+    roc_auc_score, roc_curve,
 )
 
 from pyanalytica.core.codegen import CodeSnippet
@@ -33,6 +41,135 @@ class EvaluationResult:
     profit_curve_plot: Figure | None = None
     fairness_metrics: dict | None = None
     code: CodeSnippet = field(default_factory=lambda: CodeSnippet(code=""))
+
+
+@dataclass
+class RegressionEvaluation:
+    """How well a fitted regression does on a set of rows."""
+    r_squared: float
+    rmse: float
+    mae: float
+    n: int
+    target: str
+    predicted_vs_actual: Figure | None = None
+    residual_plot: Figure | None = None
+    interpretation: str = ""
+    code: CodeSnippet = field(default_factory=lambda: CodeSnippet(code=""))
+
+    @property
+    def summary(self) -> pd.DataFrame:
+        return pd.DataFrame({
+            "Measure": [
+                "R\u00b2",
+                "RMSE (typical error, in units of the target)",
+                "MAE (average error, in units of the target)",
+                "Rows",
+            ],
+            # object dtype: a row count and three decimals in one column
+            # otherwise coerce to float, and "Rows 214.0000" reads as a
+            # measurement rather than a count.
+            "Value": pd.Series(
+                [round(self.r_squared, 4), round(self.rmse, 4),
+                 round(self.mae, 4), self.n],
+                dtype=object,
+            ),
+        })
+
+
+def evaluate_regression(
+    y_true: pd.Series | np.ndarray,
+    y_pred: pd.Series | np.ndarray,
+    target: str = "the target",
+    plots: bool = True,
+) -> RegressionEvaluation:
+    """Score a regression's predictions against what actually happened.
+
+    R-squared says how much of the variation is accounted for; RMSE and MAE say
+    how wrong a typical prediction is, in the units of the target, which is
+    usually the more useful of the two for someone deciding whether to trust it.
+    """
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    if len(y_true) != len(y_pred):
+        raise ValueError(
+            f"There are {len(y_true)} actual values and {len(y_pred)} predictions; "
+            f"they have to describe the same rows."
+        )
+    if len(y_true) < 2:
+        raise ValueError("Two rows at least are needed to score a regression.")
+
+    r2 = float(r2_score(y_true, y_pred))
+    rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    mae = float(mean_absolute_error(y_true, y_pred))
+    spread = float(np.std(y_true, ddof=1))
+
+    comparison = (
+        f"about {rmse / spread:.2f} times the spread of {target}"
+        if spread > 0 else "not comparable -- the target does not vary"
+    )
+    if r2 < 0:
+        # Saying it accounts for 0% of the variation understates this: the
+        # model is worse than the flat line, not merely uninformative.
+        interpretation = (
+            f"R\u00b2 = {r2:.3f} on these {len(y_true):,} rows. A negative "
+            f"R\u00b2 means the model does worse here than predicting the "
+            f"average of {target} every time. A typical prediction is out by "
+            f"{rmse:.3g} ({comparison})."
+        )
+    else:
+        interpretation = (
+            f"R\u00b2 = {r2:.3f} on these {len(y_true):,} rows: the model "
+            f"accounts for {r2 * 100:.1f}% of the variation in {target}. A "
+            f"typical prediction is out by {rmse:.3g} ({comparison})."
+        )
+
+    fig_pred = fig_resid = None
+    if plots:
+        fig_pred, ax = plt.subplots(figsize=(8, 5))
+        ax.scatter(y_true, y_pred, alpha=0.5)
+        lo, hi = float(np.min(y_true)), float(np.max(y_true))
+        ax.plot([lo, hi], [lo, hi], "r--", label="perfect prediction")
+        ax.set_xlabel(f"Actual {target}")
+        ax.set_ylabel(f"Predicted {target}")
+        ax.set_title("Predicted vs Actual")
+        ax.legend()
+        fig_pred.set_layout_engine("tight")
+
+        residuals = y_true - y_pred
+        fig_resid, ax2 = plt.subplots(figsize=(8, 5))
+        ax2.scatter(y_pred, residuals, alpha=0.5)
+        ax2.axhline(0, color="red", linestyle="--")
+        ax2.set_xlabel(f"Predicted {target}")
+        ax2.set_ylabel("Residual (actual - predicted)")
+        ax2.set_title("Residuals vs Predicted")
+        fig_resid.set_layout_engine("tight")
+
+    code = (
+        "from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n"
+        "import numpy as np\n\n"
+        "y_pred = model.predict(X_test)\n"
+        "print(f\"R2:   {r2_score(y_test, y_pred):.4f}\")\n"
+        "print(f\"RMSE: {np.sqrt(mean_squared_error(y_test, y_pred)):.4f}\")\n"
+        "print(f\"MAE:  {mean_absolute_error(y_test, y_pred):.4f}\")"
+    )
+
+    return RegressionEvaluation(
+        r_squared=round(r2, 4),
+        rmse=round(rmse, 4),
+        mae=round(mae, 4),
+        n=len(y_true),
+        target=target,
+        predicted_vs_actual=fig_pred,
+        residual_plot=fig_resid,
+        interpretation=interpretation,
+        code=CodeSnippet(
+            code=code,
+            imports=[
+                "import numpy as np",
+                "from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score",
+            ],
+        ),
+    )
 
 
 def evaluate_classification(
