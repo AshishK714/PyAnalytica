@@ -41,8 +41,31 @@ def real_dates():
 
 
 def test_month_names_are_refused():
-    """The filed defect: 'mar', 'apr' became 0001-03, 0001-04 and were plotted."""
+    """The filed defect: 'mar', 'apr' became 0001-03, 0001-04 and were plotted.
+
+    What pandas does with these differs by version -- 3.x dates them to year 1,
+    2.x calls them out of bounds -- so the module recognises month names itself
+    and both give the same sentence.
+    """
     df = pd.DataFrame({"month": ["mar", "apr", "may", "jun"], "value": [1, 2, 3, 4]})
+    with pytest.raises(ValueError, match="carries no year"):
+        time_series(df, "month", "value")
+
+
+def test_weekday_names_are_refused_the_same_way():
+    df = pd.DataFrame({
+        "day": ["mon", "tue", "wed", "thu", "fri"],
+        "value": [1, 2, 3, 4, 5],
+    })
+    with pytest.raises(ValueError, match="carries no year"):
+        time_series(df, "day", "value")
+
+
+def test_full_month_names_too():
+    df = pd.DataFrame({
+        "month": ["January", "February", "March", "April"],
+        "value": [1, 2, 3, 4],
+    })
     with pytest.raises(ValueError, match="carries no year"):
         time_series(df, "month", "value")
 
@@ -138,17 +161,31 @@ def test_aggregation_still_works_on_a_real_axis(real_dates):
 # ------------------------------------------------- the guard behind the guard
 
 
+def _timestamps(values: list[str]) -> pd.Series:
+    """Build these timestamps, or skip -- pandas 2 cannot represent them at all.
+
+    Nanosecond timestamps only span 1677-2262, so on pandas 2 year 1 raises
+    OutOfBoundsDatetime before this guard is ever reached. That is a safe
+    failure, and it is why the guard exists: on pandas 3 the same values parse
+    happily and get plotted.
+    """
+    try:
+        return pd.to_datetime(pd.Series(values))
+    except Exception as exc:  # OutOfBoundsDatetime, or whatever replaces it
+        pytest.skip(f"this pandas cannot represent {values[0]}: {type(exc).__name__}")
+
+
 def test_degenerate_guard_rejects_year_one_directly():
     """Belt and braces: pandas parsing behaviour moves between versions."""
     original = pd.Series(["mar", "apr", "may"])
-    parsed = pd.to_datetime(pd.Series(["0001-03-01", "0001-04-01", "0001-05-01"]))
+    parsed = _timestamps(["0001-03-01", "0001-04-01", "0001-05-01"])
     with pytest.raises(ValueError, match="year 1"):
         _reject_degenerate(parsed, original, "month")
 
 
 def test_degenerate_guard_rejects_implausible_years():
     original = pd.Series(["a", "b", "c"])
-    parsed = pd.to_datetime(pd.Series(["1200-01-01", "1201-01-01", "1202-01-01"]))
+    parsed = _timestamps(["1200-01-01", "1201-01-01", "1202-01-01"])
     with pytest.raises(ValueError, match="outside"):
         _reject_degenerate(parsed, original, "code")
 
