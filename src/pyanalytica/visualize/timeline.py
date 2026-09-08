@@ -40,6 +40,33 @@ MIN_VALUES = 3
 MIN_PARSE_RATE = 0.95
 
 
+_MONTH_NAMES = {
+    "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov",
+    "dec", "january", "february", "march", "april", "june", "july", "august",
+    "september", "october", "november", "december", "sept",
+}
+_DAY_NAMES = {
+    "mon", "tue", "tues", "wed", "thu", "thur", "thurs", "fri", "sat", "sun",
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+}
+
+
+def _names_a_period_without_a_year(series: pd.Series) -> bool:
+    """Month or weekday names, which carry no year to place them in.
+
+    Detected here rather than inferred from what pandas does with them, because
+    what pandas does with them changes: pandas 3 dates "mar" to year 1 and plots
+    it, pandas 2 refuses it as out of bounds. The column is the same column
+    either way, and the reader deserves the same sentence about it.
+    """
+    values = series.dropna()
+    if len(values) < MIN_VALUES:
+        return False
+    text = values.astype(str).str.strip().str.lower()
+    known = _MONTH_NAMES | _DAY_NAMES
+    return bool(text.isin(known).mean() >= 0.9)
+
+
 def _example_values(series: pd.Series, n: int = 3) -> str:
     """A few of the actual values, for a message the reader can act on."""
     shown = series.dropna().astype(str).unique()[:n]
@@ -98,7 +125,8 @@ def prepare_time_axis(series: pd.Series, col_name: str) -> tuple[pd.Series, list
     if rate < MIN_PARSE_RATE:
         parsed_anyway = pd.to_datetime(series, errors="coerce", format="mixed")
         years = parsed_anyway.dropna()
-        if len(years) and (years.dt.year <= 1).all():
+        year_one = bool(len(years)) and bool((years.dt.year <= 1).all())
+        if _names_a_period_without_a_year(series) or year_one:
             raise ValueError(
                 f"'{col_name}' names months or days but carries no year "
                 f"({_example_values(series)}), so there is no timeline to draw. "

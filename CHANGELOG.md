@@ -35,6 +35,16 @@ number was labelled, or in a control that did nothing.
   name the column, show its values, and point at Data > Transform > Dummy
   Encode (One-Hot).
 
+### Fixed (Timeline, on pandas 2)
+
+- **Month and weekday names are recognised directly**, rather than inferred
+  from what `pd.to_datetime` does with them. What it does depends on the pandas
+  version: 3.x dates "mar" to year 1 and plots it, 2.x refuses it as out of
+  bounds. Both refuse the column, but on pandas 2 the reader used to get the
+  vaguer "does not hold dates" instead of the sentence explaining that the
+  values name a month with no year to place it in. Python 3.10 installs pandas
+  2.3.3 -- pandas 3 needs 3.11 -- so this was every 3.10 user.
+
 ### Fixed (Data > View)
 
 - **A filter that cannot mean anything is refused instead of answered.** Every
