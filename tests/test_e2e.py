@@ -427,8 +427,12 @@ class TestDataLoad:
         expect(ds_sel).to_contain_text("tips")
         _assert_no_shiny_errors(page)
 
-        # Second oracle: the operation must also emit runnable code.
-        _assert_code(page, "load", "pd.read_csv")
+        # Second oracle: the operation must also emit runnable code. A bundled
+        # dataset ships inside the package, so pd.read_csv("tips.csv") would
+        # be a line that fails wherever the student runs it; the snippet loads
+        # it properly and names the frame df, which is what every later step
+        # refers to.
+        _assert_code(page, "load", "load_dataset", "df = ")
     def test_t06_load_diamonds(self, page: Page):
         """Load the bundled 'diamonds' dataset so two datasets are available."""
         _nav_to(page, "Data", "Load")

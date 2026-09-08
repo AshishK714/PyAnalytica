@@ -39,7 +39,10 @@ def load_csv(path: str | Path, **kwargs: Any) -> tuple[pd.DataFrame, CodeSnippet
     # Build kwargs string for code
     kwargs_str = _format_kwargs(kwargs)
     var_name = _sanitize_name(path.stem)
-    code = f'{var_name} = pd.read_csv("{path.name}"{kwargs_str})'
+    code = (
+        f'{var_name} = pd.read_csv("{path.name}"{kwargs_str})\n'
+        f'df = {var_name}  # the dataset every later step works on'
+    )
 
     df, snippet, _ = _apply_date_parsing(df, code)
     return df, snippet
@@ -58,7 +61,10 @@ def load_excel(
 
     kwargs_str = _format_kwargs(read_kwargs)
     var_name = _sanitize_name(path.stem)
-    code = f'{var_name} = pd.read_excel("{path.name}"{kwargs_str})'
+    code = (
+        f'{var_name} = pd.read_excel("{path.name}"{kwargs_str})\n'
+        f'df = {var_name}  # the dataset every later step works on'
+    )
 
     df, snippet, _ = _apply_date_parsing(df, code)
     return df, snippet
@@ -83,7 +89,14 @@ def load_bundled(name: str) -> tuple[pd.DataFrame, CodeSnippet]:
     var_name = _sanitize_name(name)
 
     # Generate code that uses pd.read_csv with a comment about bundled data
-    code = f'# Bundled dataset: {name}\n{var_name} = pd.read_csv("{name}.csv")'
+    # Not pd.read_csv("tips.csv"): the bundled data ships inside the
+    # package, so that line fails with FileNotFoundError wherever the student
+    # runs the script.
+    code = (
+        f'from pyanalytica.datasets import load_dataset\n'
+        f'{var_name} = load_dataset("{name}")\n'
+        f'df = {var_name}  # the dataset every later step works on'
+    )
 
     return df, CodeSnippet(code=code, imports=["import pandas as pd"])
 
@@ -98,14 +111,20 @@ def load_from_bytes(
         df = pd.read_excel(io.BytesIO(content), **kwargs)
         kwargs_str = _format_kwargs(kwargs)
         var_name = _sanitize_name(Path(filename).stem)
-        code = f'{var_name} = pd.read_excel("{filename}"{kwargs_str})'
+        code = (
+            f'{var_name} = pd.read_excel("{filename}"{kwargs_str})\n'
+            f'df = {var_name}  # the dataset every later step works on'
+        )
         df, snippet, _ = _apply_date_parsing(df, code)
         return df, snippet
     else:
         df = pd.read_csv(io.BytesIO(content), **kwargs)
         kwargs_str = _format_kwargs(kwargs)
         var_name = _sanitize_name(Path(filename).stem)
-        code = f'{var_name} = pd.read_csv("{filename}"{kwargs_str})'
+        code = (
+            f'{var_name} = pd.read_csv("{filename}"{kwargs_str})\n'
+            f'df = {var_name}  # the dataset every later step works on'
+        )
         df, snippet, _ = _apply_date_parsing(df, code)
         return df, snippet
 

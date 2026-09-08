@@ -134,7 +134,8 @@ def merge_dataframes(
         f"    {left_name}, {right_name},\n"
         f"    on={on_str},\n"
         f'    how="{how}"{suffixes_str}\n'
-        f")"
+        f")\n"
+        f"df = merged  # the dataset every later step works on"
     )
 
     code = "\n".join(code_lines)
@@ -156,7 +157,10 @@ def append_dataframes(
     result = pd.concat(dfs, ignore_index=True)
 
     names_str = ", ".join(names)
-    code = f"combined = pd.concat([{names_str}], ignore_index=True)"
+    code = (
+        f"combined = pd.concat([{names_str}], ignore_index=True)\n"
+        f"df = combined  # the dataset every later step works on"
+    )
 
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])
 
