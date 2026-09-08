@@ -22,7 +22,9 @@ from pyanalytica.ui.components.selects import (
 def pivot_ui():
     return ui.layout_sidebar(
         ui.sidebar(
-            ui.input_select("index", "Row Variable", choices=[]),
+            ui.input_select(
+                "index", "Row Variable(s)", choices=[], multiple=True,
+            ),
             ui.input_select("columns", "Column Variable", choices=[]),
             ui.input_select("values", "Value Variable", choices=[]),
             ui.input_select("aggfunc", "Aggregation",
@@ -51,7 +53,7 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
         df = get_current_df()
         if df is not None:
             cols = list(df.columns)
-            update_choices(input, "index", cols)
+            update_multi_choices(input, "index", cols)
             col_choices = {"": "(None)", **{c: c for c in cols}}
             update_choices(input, "columns", col_choices)
             update_choices(input, "values", cols)
@@ -61,7 +63,9 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
     def result():
         df = get_current_df()
         req(require(df is not None, NO_DATASET))
-        idx = input.index()
+        # A tuple from the multi-select; create_pivot_table has always
+        # taken a list, so nesting only ever needed the control to allow it.
+        idx = [c for c in (input.index() or ()) if c]
         cols = input.columns()
         vals = input.values()
         req(require(

@@ -22,10 +22,32 @@ class CrosstabResult:
     code: CodeSnippet
 
 
+def _index_expr(names: list[str]) -> str:
+    """How the shown code names one axis: a Series, or a list of them."""
+    if len(names) == 1:
+        return f'df["{names[0]}"]'
+    inner = ", ".join(f'df["{n}"]' for n in names)
+    return f"[{inner}]"
+
+
+def _as_list(value: "str | list[str] | tuple[str, ...] | None") -> list[str]:
+    """One name or several, always as a list."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [v for v in value if v]
+
+
+def _frames(df: pd.DataFrame, names: list[str]) -> "pd.Series | list[pd.Series]":
+    """What pandas wants: a Series for one name, a list of them for several."""
+    return df[names[0]] if len(names) == 1 else [df[n] for n in names]
+
+
 def create_crosstab(
     df: pd.DataFrame,
-    row_var: str,
-    col_var: str | None = None,
+    row_var: "str | list[str]",
+    col_var: "str | list[str] | None" = None,
     normalize: str | None = None,
     margins: bool = True,
 ) -> CrosstabResult:
@@ -33,18 +55,37 @@ def create_crosstab(
 
     normalize: None, 'index' (row %), 'columns' (col %), 'all' (total %)
     When col_var is None, produces a simple frequency table.
+
+    Either axis may name more than one column, which is what nests a table --
+    job within channel, say. pandas takes a list on either side; the panel used
+    to offer only one name.
     """
-    if col_var is None:
-        # Simple frequency table
+    rows = _as_list(row_var)
+    cols = _as_list(col_var)
+    if not rows:
+        raise ValueError("Choose at least one row variable to tabulate.")
+    row_label = " / ".join(rows)
+    col_label = " / ".join(cols)
+    if not cols:
+        # Simple frequency table. Counting across several columns is a groupby;
+        # value_counts is the one-column case of the same thing.
+        nested = len(rows) > 1
+        if nested:
+            sizes = df.groupby(rows, observed=True).size().sort_index()
+            source = f'df.groupby({rows!r}, observed=True).size().sort_index()'
+        else:
+            sizes = df[rows[0]].value_counts().sort_index()
+            source = f'df["{rows[0]}"].value_counts().sort_index()'
+
         if normalize:
-            counts = df[row_var].value_counts(normalize=True).sort_index()
+            counts = sizes / sizes.sum()
             table = counts.to_frame(name="Percent")
             table["Percent"] = (table["Percent"] * 100).round(1)
-            code = f'result = df["{row_var}"].value_counts(normalize=True).sort_index() * 100'
+            code = f"counts = {source}\nresult = counts / counts.sum() * 100"
         else:
-            counts = df[row_var].value_counts().sort_index()
+            counts = sizes
             table = counts.to_frame(name="Count")
-            code = f'result = df["{row_var}"].value_counts().sort_index()'
+            code = f"result = {source}"
 
         if margins:
             col_name = table.columns[0]
@@ -52,8 +93,8 @@ def create_crosstab(
             total_row = pd.DataFrame({col_name: [total]}, index=["Total"])
             table = pd.concat([table, total_row])
 
-        n_cats = df[row_var].nunique()
-        interpretation = f"Frequency table for {row_var} ({n_cats} categories)"
+        n_cats = len(counts)
+        interpretation = f"Frequency table for {row_label} ({n_cats} categories)"
 
         return CrosstabResult(
             table=table,
@@ -67,7 +108,7 @@ def create_crosstab(
 
     # Two-variable cross-tabulation
     # Raw counts (without margins for chi-square)
-    ct_raw = pd.crosstab(df[row_var], df[col_var])
+    ct_raw = pd.crosstab(_frames(df, rows), _frames(df, cols))
 
     # Chi-square test
     chi2, p_value, dof, expected = stats.chi2_contingency(ct_raw)
@@ -77,7 +118,7 @@ def create_crosstab(
 
     # Display table (with margins and normalization)
     ct_display = pd.crosstab(
-        df[row_var], df[col_var],
+        _frames(df, rows), _frames(df, cols),
         margins=margins,
         normalize=normalize if normalize else False,
     )
@@ -111,9 +152,10 @@ def create_crosstab(
     margins_str = f", margins={margins}" if margins else ""
 
     code = (
-        f'ct = pd.crosstab(df["{row_var}"], df["{col_var}"]{margins_str}{norm_str})\n'
+        f'ct = pd.crosstab({_index_expr(rows)}, {_index_expr(cols)}'
+        f'{margins_str}{norm_str})\n'
         f'chi2, p, dof, expected = stats.chi2_contingency(\n'
-        f'    pd.crosstab(df["{row_var}"], df["{col_var}"])\n'
+        f'    pd.crosstab({_index_expr(rows)}, {_index_expr(cols)})\n'
         f')\n'
         f'print(f"Chi-square: {{chi2:.2f}}, p-value: {{p:.4f}}, df: {{dof}}")'
     )
