@@ -38,6 +38,55 @@ class Procedure:
     version: int = 1
 
 
+def _defines_the_frame(steps) -> bool:
+    """Does any enabled step assign df, so the script can stand on its own?"""
+    for step in steps:
+        if not step.enabled:
+            continue
+        for line in step.code.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("df ") and "=" in stripped.split("df ", 1)[1][:3]:
+                return True
+            if stripped.startswith("df="):
+                return True
+    return False
+
+
+def _load_preamble(procedure) -> str:
+    """A line to load the data, for a procedure that does not include one.
+
+    Recording is off until the student turns it on, and they cannot analyse
+    anything before loading, so the load is almost never one of the steps. The
+    exported script then opens by indexing a dataset it never read.
+    """
+    dataset = next((s.dataset for s in procedure.steps if s.dataset), "")
+
+    bundled: set[str] = set()
+    try:
+        from pyanalytica.datasets import list_datasets
+
+        bundled = set(list_datasets())
+    except Exception:  # the dataset list is not essential to exporting
+        pass
+
+    note = (
+        "# Recording started after the dataset was loaded, so loading it is not\n"
+        "# one of the steps below. This line puts it back."
+    )
+    if dataset and dataset in bundled:
+        return (
+            note
+            + "\nfrom pyanalytica.datasets import load_dataset"
+            + f'\ndf = load_dataset("{dataset}")\n'
+        )
+
+    name = dataset or "your_data"
+    if not name.endswith((".csv", ".xlsx", ".xls")):
+        name = name + ".csv"
+    reader = "pd.read_excel" if name.endswith((".xlsx", ".xls")) else "pd.read_csv"
+    return note + " Point it at your file." + f'\ndf = {reader}("{name}")\n'
+
+
 class ProcedureRecorder:
     """Records analytics steps and builds reusable procedures."""
 
@@ -192,6 +241,9 @@ class ProcedureRecorder:
             lines.append(f"{comment}\n{step.code}")
             code_blocks.append("\n".join(lines))
 
+        if not _defines_the_frame(procedure.steps):
+            code_blocks.insert(0, _load_preamble(procedure))
+
         header = sorted(all_imports)
         script = (
             f'"""Procedure: {procedure.name}\n'
@@ -237,6 +289,21 @@ class ProcedureRecorder:
             "execution_count": None,
             "outputs": [],
         })
+
+        # The notebook has the same gap the script had: recording begins after
+        # the data is loaded, so the first step would run against a name that
+        # was never defined.
+        if not _defines_the_frame(procedure.steps):
+            cells.append({
+                "cell_type": "code",
+                "metadata": {},
+                "source": [
+                    line + "\n"
+                    for line in _load_preamble(procedure).rstrip().splitlines()
+                ],
+                "execution_count": None,
+                "outputs": [],
+            })
 
         # Step cells
         current_dataset = ""

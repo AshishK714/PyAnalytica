@@ -35,6 +35,27 @@ number was labelled, or in a control that did nothing.
   name the column, show its values, and point at Data > Transform > Dummy
   Encode (One-Hot).
 
+### Fixed (Report, and the code every panel shows)
+
+- **The exported script runs.** It did not. The loaders name the frame after its
+  source -- `tips = pd.read_csv(...)` -- because Data > Combine refers to
+  datasets by name when it merges them, while every other panel emits `df`.
+  Nothing joined the two, so every exported script and notebook died on its
+  second statement with `NameError: name 'df' is not defined`. Loading now
+  produces both: the named frame Combine needs, and `df` pointing at it.
+- **The bundled-dataset line loads the bundled dataset.** It read
+  `pd.read_csv("tips.csv")`, a file that ships inside the package and is not on
+  disk wherever the student runs the script, so it failed with FileNotFoundError
+  even after the naming was right. It now uses `load_dataset("tips")`.
+- **An exported procedure carries its own data.** Recording starts when the
+  student presses the button, necessarily after loading, so the load is almost
+  never one of the steps and the script opened by indexing a dataset it had
+  never read. Exports now prepend the load -- resolved to the bundled loader by
+  name, or a `pd.read_csv` line to point at their file -- and say why it is
+  there. Both the script and the notebook.
+- Merging or appending in Data > Combine now also sets `df` to the result, which
+  is what the panels go on to work with.
+
 ### Fixed (Data > Transform)
 
 - **String: Extract works on patterns written the ordinary way.** The typed
@@ -89,6 +110,10 @@ number was labelled, or in a control that did nothing.
 
 ### Added
 
+- `tests/test_report/test_exports_run.py` -- the exported script and notebook
+  are written to disk and **executed**. Ten tests, all ten failing against the
+  old code. Nothing weaker would have caught this: every export was
+  well-formed, correctly structured, and did not run.
 - `tests/test_e2e_transform_actions.py` -- all nineteen Transform actions driven
   in the app, each from a freshly loaded dataset, each followed by asking the
   server for something new. Apply commits with no undo, so sharing one dataset
