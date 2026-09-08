@@ -53,7 +53,7 @@ def scatter(
             data=df, x=x, y=y, kind="scatter",
             **facet_kwargs, **plot_kwargs,
         )
-        g.figure.suptitle(f"{y} vs {x}", y=1.02)
+        g.figure.suptitle(f"{y} vs {x}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -65,7 +65,7 @@ def scatter(
 
         code_lines = [
             f'g = sns.relplot(data=df, x="{x}", y="{y}", kind="scatter", alpha=0.6{extra_args}{facet_args})',
-            f'g.figure.suptitle("{y} vs {x}", y=1.02)',
+            f'g.figure.suptitle("{y} vs {x}")',
             f'plt.tight_layout()',
             f'plt.show()',
         ]

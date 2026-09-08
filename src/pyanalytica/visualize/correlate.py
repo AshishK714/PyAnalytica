@@ -63,7 +63,7 @@ def pair_plot(
 
     g = sns.pairplot(plot_df, vars=plot_cols, hue=color_by, diag_kind="hist",
                      plot_kws={"alpha": 0.5})
-    g.figure.suptitle("Pair Plot", y=1.02)
+    g.figure.suptitle("Pair Plot")
     fig = g.figure
 
     hue_str = f', hue="{color_by}"' if color_by else ""

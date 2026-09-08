@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-09-08
+
+The seven issues that were still open, and the last piece of the disclosure
+work. Nothing here changes an answer the tool gives; several things change what
+it tells you about one.
+
+### A closed section costs nothing to compute
+
+Hiding an output stopped it being drawn, never built. Cluster is where that was
+expensive: its elbow plot fits k-means at every k from 2 to 10 and scores each
+with silhouette, which is O(n^2).
+
+| | with plots | closed |
+|---|---|---|
+| k-means, k=3, 891 rows | 697.5 ms | 32.0 ms |
+| PCA, 891 rows | 22.3 ms | 2.8 ms |
+| regression, 891 rows | 32.1 ms | 10.6 ms |
+
+On the 53,940-row diamonds that sweep did not finish at all, which is why
+Cluster was unusable there. The panels now tell the library what they are
+showing; opening a section re-runs the fit with the figures. The clustering is
+byte-identical either way.
+
+### A failed run no longer hides behind a stale result
+
+Run a two-sample t-test that works, change the grouping variable to one with
+twelve levels, run again: the toast said "Expected 2 groups, got 12" and
+expired, leaving the previous test's answer beside the inputs that had just
+failed, with nothing marking it as gone.
+
+Every panel outside Homework and Practice now keeps its messages on the panel,
+with the last four visible, and clears its result when a run fails. The toast
+stays alongside for whoever is looking elsewhere.
+
+This matters beyond tidiness: a failure that only toasts is invisible to the
+test suite as well. A browser assertion of "it rendered, no error element"
+passes while the action fails, because the previous render is still there.
+
+### Also fixed
+
+- **Shapiro-Wilk reports the n it tested.** Above 5,000 rows scipy will not run
+  it, so the column is sampled -- and the panel reported the frame's n against a
+  statistic computed on 5,000 rows. Both figures are shown, and the shown code
+  samples the way the panel did.
+- **Bar charts honour Group By and both facet controls.** They were displayed,
+  accepted values, and were dropped at the call site.
+- **Pivot and Cross-tab take several row variables**, which is most of what a
+  pivot-table lesson is about. `create_pivot_table` had always accepted a list;
+  only the select was single-valued.
+- **Faceted figures stop clipping their titles.** The suptitle was placed at
+  y=1.02 -- above the figure, where a layout engine cannot reserve room for it.
+- **Assumption checks read as sentences** rather than a printed dictionary of
+  snake_case keys, `normality_ok: False`, and a p-value of 1e-16 shown as `0.0`.
+- **One-way ANOVA says when its equal-variance assumption fails.** It uses
+  scipy's `f_oneway`, which assumes equal spread and does not correct for its
+  absence, and it had been reporting the result with no remark. It now says the
+  p-value is optimistic and points at Kruskal-Wallis.
+
+### Tests
+
+1152, up from 1067. Three new lint classes, each with an explicit exception list
+that is asserted to shrink: no control rendered without being read, no second
+plot drawn unasked, no message delivered only as a toast.
+
 ## [0.9.0] - 2026-09-08
 
 Three changes a student will notice: the bundled datasets are the real ones,

@@ -121,3 +121,65 @@ class TestHeadingsBelongToTheirSection:
         # Before anything is fitted there is no VIF table, so nothing should
         # announce one outside a section the student chose to open.
         assert "VIF (Multicollinearity)" not in body
+
+
+class TestClosedSectionsCostNothingToCompute:
+    """Hiding an output stops it being drawn, not built.
+
+    Cluster is the case that matters: the elbow plot fits k-means at every k in
+    2..10 and scores each with silhouette, which is O(n^2). That is 697ms of a
+    730ms run on 891 rows, and on the 53,940-row diamonds it does not finish --
+    all to draw a plot that starts closed. The panel now tells the library not
+    to build what nobody is looking at, and opening the section re-runs it.
+
+    The risk this guards is the obvious one: a section that, once opened, shows
+    nothing because the work was skipped and never redone.
+    """
+
+    def test_t07_cluster_runs_with_both_sections_closed(self, page: Page):
+        _nav_to(page, "Data", "Load")
+        _wait_stable(page)
+        page.wait_for_selector(_sid("load", "bundled_name"), state="attached", timeout=15_000)
+        _select_option(page, _sid("load", "bundled_name"), "titanic")
+        page.locator(_sid("load", "load_btn")).click()
+        _wait_stable(page, 4000)
+
+        _nav_to(page, "Model", "Cluster")
+        _wait_stable(page, 2000)
+        page.wait_for_selector(
+            f"{_sid('cluster', 'features')} option:not([value=''])",
+            state="attached", timeout=15_000,
+        )
+        page.evaluate(
+            """(sel) => {
+                const el = document.querySelector(sel);
+                Array.from(el.options).forEach(o => o.selected = ['Age','Fare'].includes(o.value));
+                el.dispatchEvent(new Event('change', {bubbles: true}));
+            }""",
+            _sid("cluster", "features"),
+        )
+        _wait_stable(page, 1000)
+        page.locator(_sid("cluster", "run_btn")).click()
+        _wait_stable(page, 6000)
+
+        expect(page.locator(_sid("cluster", "cluster_summary"))).to_be_visible()
+        assert page.locator(_sid("cluster", "profiles")).inner_text().strip()
+        # Neither figure was built, so neither is on the page.
+        assert page.locator(f"{_sid('cluster', 'elbow_plot')} img").count() == 0
+        assert page.locator(f"{_sid('cluster', 'scatter_plot')} img").count() == 0
+
+    def test_t08_opening_the_elbow_builds_it(self, page: Page):
+        """The half that would break if the flag were only a rendering hint."""
+        page.locator(".accordion-button:has-text('Choosing k')").first.click()
+        _wait_stable(page, 8000)
+        expect(page.locator(f"{_sid('cluster', 'elbow_plot')} img")).to_be_visible(
+            timeout=30_000
+        )
+
+    def test_t09_the_answer_is_the_same_either_way(self, page: Page):
+        """Re-running with the plots must not change the clustering."""
+        before = page.locator(_sid("cluster", "profiles")).inner_text()
+        page.locator(".accordion-button:has-text('Choosing k')").first.click()
+        _wait_stable(page, 5000)
+        after = page.locator(_sid("cluster", "profiles")).inner_text()
+        assert before == after, "the cluster profiles changed when a plot was toggled"

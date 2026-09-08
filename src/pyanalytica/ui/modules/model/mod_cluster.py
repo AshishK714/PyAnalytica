@@ -8,9 +8,15 @@ from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.model.cluster import hierarchical_cluster, kmeans_cluster
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
-from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
+from pyanalytica.ui.components.disclosure import (
+    PLOT_HEIGHT,
+    diagnostics,
+    is_open,
+    supporting,
+)
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -29,6 +35,8 @@ def cluster_ui():
             width=300,
         ),
         # Tier 1 -- the clusters and what is in them.
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("guidance"),
         ui.output_ui("cluster_summary"),
         ui.output_ui("profiles_heading"),
@@ -38,12 +46,14 @@ def cluster_ui():
         supporting(
             "Cluster scatter plot",
             ui.output_plot("scatter_plot", height=PLOT_HEIGHT),
+            id="scatter_open",
         ),
         # Tier 3 -- how many clusters to use is a different question from what
         # the clusters are.
         diagnostics(
             "Choosing k (elbow plot)",
             ui.output_plot("elbow_plot", height=PLOT_HEIGHT),
+            id="elbow_open",
         ),
         code_panel_ui("code"),
     )
@@ -53,6 +63,7 @@ def cluster_ui():
 def cluster_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     result = reactive.value(None)
+    status = status_server("status")
 
     @reactive.effect
     def _update_cols():
@@ -60,8 +71,15 @@ def cluster_server(input, output, session, state: WorkbenchState, get_current_df
         if df is not None:
             update_multi_choices(input, "features", get_numeric_columns(df))
 
+    def _wants_plots() -> bool:
+        """Either section being open is enough: both come from one sweep."""
+        return is_open(input, "elbow_open") or is_open(input, "scatter_open")
+
     @reactive.effect
-    @reactive.event(input.run_btn)
+    # Opening a diagnostics section has to re-run this: the fit is what
+    # builds the figures, and with the event limited to the button, a
+    # section opened after the fit stayed empty.
+    @reactive.event(input.run_btn, input["elbow_open"], input["scatter_open"])
     def _run():
         df = get_current_df()
         if not require(df is not None, NO_DATASET):
@@ -77,14 +95,23 @@ def cluster_server(input, output, session, state: WorkbenchState, get_current_df
             return
         try:
             if input.method() == "kmeans":
-                r = kmeans_cluster(df, features, chosen_k=input.n_clusters())
+                # The elbow plot's sweep -- a k-means fit and an O(n^2)
+                # silhouette score at every k in 2..10 -- is 95% of this
+                # panel's runtime and exists only to draw it. 697ms
+                # against 32ms on 891 rows; on diamonds it does not
+                # finish. The answer is identical either way.
+                r = kmeans_cluster(
+                    df, features, chosen_k=input.n_clusters(),
+                    diagnostics=_wants_plots(),
+                )
             else:
                 r = hierarchical_cluster(df, features, n_clusters=input.n_clusters())
             result.set(r)
             state.codegen.record(r.code, action="model", description="Cluster analysis")
             last_code.set(r.code.code)
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def guidance():

@@ -9,6 +9,7 @@ from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.analyze.correlation import correlation_test
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -27,6 +28,8 @@ def correlation_ui():
             ui.input_action_button("run_btn", "Run Test", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("test_result"),
         code_panel_ui("code"),
     )
@@ -36,6 +39,7 @@ def correlation_ui():
 def correlation_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     result = reactive.value(None)
+    status = status_server("status")
 
     @reactive.effect
     def _update_cols():
@@ -64,7 +68,8 @@ def correlation_server(input, output, session, state: WorkbenchState, get_curren
             state.codegen.record(r.code, action="analyze", description="Correlation test")
             last_code.set(r.code.code)
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def test_result():

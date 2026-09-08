@@ -118,7 +118,10 @@ def distribute_server(input, output, session, state: WorkbenchState, get_current
         elif ct == "violin":
             fig, snippet = violin(df, col, group_by=group, facet_col=facet_c, facet_row=facet_r)
         elif ct == "bar":
-            fig, snippet = bar_chart(df, col, orientation=input.orientation(), pct=input.pct())
+            fig, snippet = bar_chart(
+                df, col, orientation=input.orientation(), pct=input.pct(),
+                group_by=group, facet_col=facet_c, facet_row=facet_r,
+            )
         else:
             return ui.div()
 

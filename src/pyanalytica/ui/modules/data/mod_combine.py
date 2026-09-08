@@ -8,6 +8,7 @@ from pyanalytica.core.state import Operation, WorkbenchState
 from pyanalytica.data.combine import detect_overlapping_columns, merge_dataframes
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -31,6 +32,8 @@ def combine_ui():
             ui.input_action_button("merge_btn", "Merge", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Above the output: a failure belongs where the result would be.
+        status_ui("status"),
         ui.output_text("merge_info"),
         ui.output_data_frame("merge_preview"),
         code_panel_ui("code"),
@@ -40,6 +43,7 @@ def combine_ui():
 @module.server
 def combine_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    status = status_server("status")
 
     @reactive.effect
     def _update_datasets():
@@ -160,9 +164,9 @@ def combine_server(input, output, session, state: WorkbenchState, get_current_df
                 f"Left unmatched: {result.left_unmatched} | "
                 f"Right unmatched: {result.right_unmatched}"
             )
-            ui.notification_show(msg, type="message")
+            status.done(msg)
         except Exception as e:
-            ui.notification_show(f"Merge error: {e}", type="error")
+            status.failed(str(e))
 
     @render.text
     def merge_info():

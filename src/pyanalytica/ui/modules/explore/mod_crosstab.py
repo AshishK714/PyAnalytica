@@ -23,7 +23,9 @@ from pyanalytica.ui.components.selects import (
 def crosstab_ui():
     return ui.layout_sidebar(
         ui.sidebar(
-            ui.input_select("row_var", "Row Variable", choices=[]),
+            ui.input_select(
+                "row_var", "Row Variable(s)", choices=[], multiple=True,
+            ),
             ui.input_select("col_var", "Column Variable", choices=[]),
             ui.input_select("normalize", "Display",
                 choices={"": "Counts", "index": "Row %", "columns": "Column %", "all": "Total %"}),
@@ -52,7 +54,7 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
             cat_cols = get_groupable_columns(df)
             all_cols = list(df.columns)
             choices = cat_cols if cat_cols else all_cols
-            update_choices(input, "row_var", choices)
+            update_multi_choices(input, "row_var", choices)
             col_choices = {"": "(None)", **{c: c for c in choices}}
             update_choices(input, "col_var", col_choices)
 
@@ -61,7 +63,7 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
     def result():
         df = get_current_df()
         req(require(df is not None, NO_DATASET))
-        row = input.row_var()
+        row = [c for c in (input.row_var() or ()) if c]
         col = input.col_var()
         req(require(row, "Choose a Rows variable to tabulate."))
 

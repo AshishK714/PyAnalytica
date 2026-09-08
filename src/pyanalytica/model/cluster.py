@@ -36,17 +36,27 @@ def kmeans_cluster(
     features: list[str],
     k_range: range = range(2, 11),
     chosen_k: int | None = None,
+    diagnostics: bool = True,
 ) -> ClusterResult:
-    """K-means clustering with elbow plot and silhouette analysis."""
+    """K-means clustering with elbow plot and silhouette analysis.
+
+    Set *diagnostics* to False to skip the figures and, with them, the sweep
+    behind the elbow plot: a k-means fit and a silhouette score at every k in
+    *k_range*. Silhouette is O(n^2), so on a large frame that sweep is the
+    whole cost of the panel. It is only needed to draw the elbow, or to choose
+    k when *chosen_k* is None.
+    """
     require_numeric_features(df, features, "K-means clustering")
     clean = df[features].dropna()
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(clean)
 
-    # Elbow plot data
-    inertias = []
-    sil_scores = []
-    for k in k_range:
+    # The sweep exists to draw the elbow and, failing an explicit k, to pick
+    # one. Skip it when neither is wanted.
+    inertias: list[float] = []
+    sil_scores: list[float] = []
+    sweep = diagnostics or chosen_k is None
+    for k in (k_range if sweep else []):
         km = KMeans(n_clusters=k, random_state=42, n_init=10)
         km.fit(X_scaled)
         inertias.append(km.inertia_)
@@ -55,13 +65,14 @@ def kmeans_cluster(
         else:
             sil_scores.append(0.0)
 
-    # Elbow plot
-    fig_elbow, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(list(k_range), inertias, "bo-", linewidth=2)
-    ax.set_xlabel("Number of Clusters (k)")
-    ax.set_ylabel("Inertia (Within-cluster Sum of Squares)")
-    ax.set_title("Elbow Plot")
-    fig_elbow.set_layout_engine("tight")
+    fig_elbow = None
+    if diagnostics:
+        fig_elbow, ax = plt.subplots(figsize=(8, 5))
+        ax.plot(list(k_range), inertias, "bo-", linewidth=2)
+        ax.set_xlabel("Number of Clusters (k)")
+        ax.set_ylabel("Inertia (Within-cluster Sum of Squares)")
+        ax.set_title("Elbow Plot")
+        fig_elbow.set_layout_engine("tight")
 
     # Choose k
     if chosen_k is None:
@@ -78,7 +89,7 @@ def kmeans_cluster(
 
     # Scatter plot (first 2 features)
     fig_scatter = None
-    if len(features) >= 2:
+    if diagnostics and len(features) >= 2:
         fig_scatter, ax2 = plt.subplots(figsize=(8, 6))
         scatter = ax2.scatter(
             X_scaled[:, 0], X_scaled[:, 1],

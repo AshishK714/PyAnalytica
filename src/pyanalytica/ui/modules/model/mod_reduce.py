@@ -8,9 +8,15 @@ from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.model.reduce import pca_analysis
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
-from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
+from pyanalytica.ui.components.disclosure import (
+    PLOT_HEIGHT,
+    diagnostics,
+    is_open,
+    supporting,
+)
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -26,6 +32,8 @@ def reduce_ui():
             width=300,
         ),
         # Tier 1 -- how much variance the components explain.
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("guidance"),
         ui.output_ui("pca_summary"),
         download_result_ui("dl"),
@@ -37,11 +45,13 @@ def reduce_ui():
         supporting(
             "How many components? (scree plot)",
             ui.output_plot("scree_plot", height=PLOT_HEIGHT),
+            id="scree_open",
         ),
         # Tier 3.
         diagnostics(
             "Biplot",
             ui.output_plot("biplot", height=PLOT_HEIGHT),
+            id="biplot_open",
         ),
         ui.p("PCA reveals structure in your data. It's exploratory — not predictive.", class_="text-muted small mt-2"),
         code_panel_ui("code"),
@@ -52,6 +62,7 @@ def reduce_ui():
 def reduce_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     result = reactive.value(None)
+    status = status_server("status")
 
     @reactive.effect
     def _update_cols():
@@ -60,7 +71,10 @@ def reduce_server(input, output, session, state: WorkbenchState, get_current_df)
             update_multi_choices(input, "features", get_numeric_columns(df))
 
     @reactive.effect
-    @reactive.event(input.run_btn)
+    # Opening a diagnostics section has to re-run this: the fit is what
+    # builds the figures, and with the event limited to the button, a
+    # section opened after the fit stayed empty.
+    @reactive.event(input.run_btn, input["scree_open"], input["biplot_open"])
     def _run():
         df = get_current_df()
         if not require(df is not None, NO_DATASET):
@@ -75,12 +89,18 @@ def reduce_server(input, output, session, state: WorkbenchState, get_current_df)
             result.set(None)
             return
         try:
-            r = pca_analysis(df, features)
+            # Both figures come from the same fit, so either section being
+            # open is enough to want them.
+            r = pca_analysis(
+                df, features,
+                diagnostics=is_open(input, "scree_open") or is_open(input, "biplot_open"),
+            )
             result.set(r)
             state.codegen.record(r.code, action="model", description="PCA")
             last_code.set(r.code.code)
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            result.set(None)
+            status.failed(str(e))
 
     @render.ui
     def guidance():

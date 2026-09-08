@@ -49,13 +49,13 @@ def histogram(
             data=df, x=col, bins=bins, kde=kde,
             kind="hist", **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Distribution of {col}", y=1.02)
+        g.figure.suptitle(f"Distribution of {col}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.displot(data=df, x="{col}", bins={bins}{kde_str}{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Distribution of {col}", y=1.02)\n'
+            f'g.figure.suptitle("Distribution of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -112,13 +112,13 @@ def boxplot(
             data=df, x=col, kind="box",
             **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Box Plot of {col}", y=1.02)
+        g.figure.suptitle(f"Box Plot of {col}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{col}", kind="box"{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Box Plot of {col}", y=1.02)\n'
+            f'g.figure.suptitle("Box Plot of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -168,13 +168,13 @@ def violin(
             data=df, x=col, kind="violin",
             **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Violin Plot of {col}", y=1.02)
+        g.figure.suptitle(f"Violin Plot of {col}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{col}", kind="violin"{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Violin Plot of {col}", y=1.02)\n'
+            f'g.figure.suptitle("Violin Plot of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -201,11 +201,87 @@ def violin(
     )
 
 
+def _bar_chart_split(
+    df: pd.DataFrame, col: str, *, orientation: str, sort: bool, pct: bool,
+    group_by: str | None = None, facets: dict[str, str] | None = None,
+) -> tuple[Figure, CodeSnippet]:
+    """A bar chart split by a group, by facets, or by both.
+
+    seaborn's countplot does the grouping; catplot adds the facets.
+
+    The percentage form is a share of *all* the rows, not of the panel: with
+    two facets the panels total 100 between them, not 100 each. That is
+    seaborn's behaviour and it is the more useful of the two here, since it
+    lets panels be compared with each other -- but it is not what "percentage"
+    alone suggests, so the title says which.
+    """
+    # "col" is seaborn's name for a column facet and also this function's
+    # name for the variable being counted, so the facets travel as a dict.
+    facets = facets or {}
+    order = (
+        df[col].value_counts().sort_values(ascending=False).index.tolist()
+        if sort else sorted(df[col].dropna().unique())
+    )
+    axis = {"y": col} if orientation == "horizontal" else {"x": col}
+    hue_kwarg = {"hue": group_by} if group_by else {}
+    stat = "percent" if pct else "count"
+
+    g = sns.catplot(
+        data=df, kind="count", order=order, stat=stat,
+        **axis, **hue_kwarg, **facets,
+    )
+    if pct:
+        heading = "Percentage of all rows"
+    else:
+        heading = "Count"
+    g.figure.suptitle(f"{heading}, {col}" if pct else f"Count of {col}")
+    g.figure.set_layout_engine("tight")
+
+    hue_str = f', hue="{group_by}"' if group_by else ""
+    facet_str = "".join(f', {k}="{v}"' for k, v in facets.items())
+    axis_str = f'y="{col}"' if orientation == "horizontal" else f'x="{col}"'
+    code = (
+        f'order = df["{col}"].value_counts()'
+        f'{".sort_values(ascending=False)" if sort else ""}.index.tolist()\n'
+        f'g = sns.catplot(\n'
+        f'    data=df, kind="count", {axis_str}, order=order,\n'
+        f'    stat="{stat}"{hue_str}{facet_str},\n'
+        f')\n'
+        f'g.figure.suptitle("{heading} of {col}")\n'
+        f'plt.show()'
+    )
+    return g.figure, CodeSnippet(
+        code=code,
+        imports=["import matplotlib.pyplot as plt", "import seaborn as sns"],
+    )
+
+
 def bar_chart(
     df: pd.DataFrame, col: str, orientation: str = "vertical",
     sort: bool = True, pct: bool = False,
+    group_by: str | None = None,
+    facet_col: str | None = None, facet_row: str | None = None,
 ) -> tuple[Figure, CodeSnippet]:
-    """Create a bar chart of a categorical column."""
+    """Create a bar chart of a categorical column.
+
+    Group By and the two facet arguments used to be missing here while the
+    panel offered all three: the controls accepted values and the chart
+    ignored them, so a student splitting a bar chart by a second variable got
+    the same picture back and no indication why.
+    """
+    grouped = bool(group_by and group_by in df.columns)
+    facets = {}
+    if facet_col and facet_col in df.columns:
+        facets["col"] = facet_col
+    if facet_row and facet_row in df.columns:
+        facets["row"] = facet_row
+
+    if grouped or facets:
+        return _bar_chart_split(
+            df, col, orientation=orientation, sort=sort, pct=pct,
+            group_by=group_by if grouped else None, facets=facets,
+        )
+
     fig, ax = plt.subplots(figsize=(8, 5))
 
     counts = df[col].value_counts()

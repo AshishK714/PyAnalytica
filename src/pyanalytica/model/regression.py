@@ -50,6 +50,7 @@ def linear_regression(
     features: list[str],
     test_size: float | None = None,
     random_state: int = 42,
+    diagnostics: bool = True,
 ) -> RegressionResult:
     """Fit a linear regression and return comprehensive results."""
     require_numeric_features(df, features, "Linear regression")
@@ -140,21 +141,21 @@ def linear_regression(
         vif_data = [{"variable": features[0], "VIF": 1.0}]
     vif_df = pd.DataFrame(vif_data)
 
-    # Residual plot
     residuals = y - y_pred_all
-    fig_resid, ax = plt.subplots(figsize=(8, 5))
-    ax.scatter(y_pred_all, residuals, alpha=0.5)
-    ax.axhline(y=0, color="red", linestyle="--")
-    ax.set_xlabel("Fitted Values")
-    ax.set_ylabel("Residuals")
-    ax.set_title("Residuals vs Fitted")
-    fig_resid.set_layout_engine("tight")
+    fig_resid = fig_qq = None
+    if diagnostics:
+        fig_resid, ax = plt.subplots(figsize=(8, 5))
+        ax.scatter(y_pred_all, residuals, alpha=0.5)
+        ax.axhline(y=0, color="red", linestyle="--")
+        ax.set_xlabel("Fitted Values")
+        ax.set_ylabel("Residuals")
+        ax.set_title("Residuals vs Fitted")
+        fig_resid.set_layout_engine("tight")
 
-    # QQ plot
-    fig_qq, ax_qq = plt.subplots(figsize=(8, 5))
-    stats.probplot(residuals, dist="norm", plot=ax_qq)
-    ax_qq.set_title("Normal Q-Q Plot")
-    fig_qq.set_layout_engine("tight")
+        fig_qq, ax_qq = plt.subplots(figsize=(8, 5))
+        stats.probplot(residuals, dist="norm", plot=ax_qq)
+        ax_qq.set_title("Normal Q-Q Plot")
+        fig_qq.set_layout_engine("tight")
 
     # Interpretation
     if test_r_sq is None:

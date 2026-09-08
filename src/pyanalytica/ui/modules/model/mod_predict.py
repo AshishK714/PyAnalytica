@@ -12,6 +12,7 @@ from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_u
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -37,6 +38,8 @@ def predict_ui():
             ui.input_action_button("save_btn", "Save to Workbench", class_="btn-outline-primary w-100 mt-1"),
             width=300,
         ),
+        # Above the result: when a run fails this is what replaces it.
+        status_ui("status"),
         ui.output_ui("predict_summary"),
         decimals_ui("dec"),
         ui.output_data_frame("predict_table"),
@@ -49,6 +52,7 @@ def predict_ui():
 def predict_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
     pred_df = reactive.value(None)
+    status = status_server("status")
     get_dec = decimals_server("dec")
 
     @reactive.effect
@@ -88,14 +92,14 @@ def predict_server(input, output, session, state: WorkbenchState, get_current_df
 
             if source == "train":
                 if artifact.X_train is None:
-                    ui.notification_show("No training data stored.", type="warning")
+                    status.check("No training data stored.")
                     return
                 df = artifact.X_train.copy()
                 if artifact.y_train is not None:
                     actual_values = artifact.y_train
             elif source == "test":
                 if artifact.X_test is None:
-                    ui.notification_show("No test data stored.", type="warning")
+                    status.check("No test data stored.")
                     return
                 df = artifact.X_test.copy()
                 if artifact.y_test is not None:
@@ -128,13 +132,13 @@ def predict_server(input, output, session, state: WorkbenchState, get_current_df
             pred_df.set(result_df)
             state.codegen.record(snippet, action="model", description="Prediction")
             last_code.set(snippet.code)
-            ui.notification_show(
-                f"Predictions generated: {len(result_df)} rows.",
-                type="message",
+            status.done(
+                f"Predictions generated: {len(result_df)} rows."
             )
 
         except Exception as e:
-            ui.notification_show(f"Error: {e}", type="error")
+            pred_df.set(None)
+            status.failed(str(e))
 
     @reactive.effect
     @reactive.event(input.save_btn)
@@ -146,7 +150,7 @@ def predict_server(input, output, session, state: WorkbenchState, get_current_df
         if not name:
             name = "predictions"
         state.load(name, df)
-        ui.notification_show(f"Saved as '{name}'.", type="message")
+        status.done(f"Saved as '{name}'.")
 
     @render.ui
     def predict_summary():

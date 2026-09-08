@@ -10,6 +10,7 @@ from pyanalytica.core.procedure import ProcedureRecorder
 from pyanalytica.core.state import WorkbenchState
 from pyanalytica.ui.components.downloads import render_download
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.status import status_server, status_ui
 
 
 # Action badge colours (same palette as mod_notebook)
@@ -209,6 +210,8 @@ def procedure_ui():
             ),
             width=300,
         ),
+        # Above the output: a failure belongs where the result would be.
+        status_ui("status"),
         ui.output_ui("recording_indicator"),
         ui.output_ui("step_list"),
     )
@@ -218,6 +221,7 @@ def procedure_ui():
 def procedure_server(input, output, session, state: WorkbenchState, get_current_df):
     recorder = state.procedure_recorder
     refresh = reactive.value(0)
+    status = status_server("status")
     built_procedure = reactive.value(None)
 
     # Fully-namespaced IDs for JavaScript Shiny.setInputValue() calls
@@ -264,9 +268,8 @@ def procedure_server(input, output, session, state: WorkbenchState, get_current_
         desc = input.proc_desc().strip()
         proc = recorder.build_procedure(name, desc)
         built_procedure.set(proc)
-        ui.notification_show(
-            f"Procedure '{name}' built with {len(proc.steps)} steps.",
-            type="message",
+        status.done(
+            f"Procedure '{name}' built with {len(proc.steps)} steps."
         )
 
     # --- Import ---
@@ -284,12 +287,10 @@ def procedure_server(input, output, session, state: WorkbenchState, get_current_
             recorder.clear()
             recorder._steps = list(proc.steps)
             built_procedure.set(proc)
-            ui.notification_show(
-                f"Loaded '{proc.name}' ({len(proc.steps)} steps).", type="message",
-            )
+            status.done(f"Loaded '{proc.name}' ({len(proc.steps)} steps).")
             _bump()
         except Exception as e:
-            ui.notification_show(f"Import error: {e}", type="error")
+            status.failed(str(e))
 
     # --- Step action handler (delete / toggle / up / down) ---
     @reactive.effect
