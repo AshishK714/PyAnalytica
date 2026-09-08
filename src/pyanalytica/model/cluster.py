@@ -14,6 +14,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.model._validate import require_numeric_features
 
 Figure = matplotlib.figure.Figure
 
@@ -37,6 +38,7 @@ def kmeans_cluster(
     chosen_k: int | None = None,
 ) -> ClusterResult:
     """K-means clustering with elbow plot and silhouette analysis."""
+    require_numeric_features(df, features, "K-means clustering")
     clean = df[features].dropna()
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(clean)
@@ -119,6 +121,7 @@ def hierarchical_cluster(
     n_clusters: int = 3,
 ) -> ClusterResult:
     """Hierarchical (agglomerative) clustering."""
+    require_numeric_features(df, features, "Hierarchical clustering")
     clean = df[features].dropna()
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(clean)

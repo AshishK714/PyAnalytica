@@ -21,6 +21,26 @@ from pyanalytica.ui.components.selects import (
 )
 
 
+def _r_squared_line(r) -> str:
+    """Label each R2 by the rows it was measured on.
+
+    With a Test Split set, the panel used to print the *training* R2 as plain
+    "R2" -- the one number the split exists to avoid. Both are shown now, and
+    which is which is part of the label rather than something to know already.
+    """
+    training = (
+        f"R\u00b2 (training) = {r.r_squared:.4f} | "
+        f"Adj. R\u00b2 = {r.adj_r_squared:.4f}"
+    )
+    if r.test_r_squared is None:
+        return (
+            f"R\u00b2 = {r.r_squared:.4f} | Adj. R\u00b2 = {r.adj_r_squared:.4f} "
+            f"| fitted and measured on all rows -- set Test Split above to hold "
+            f"some back"
+        )
+    return f"R\u00b2 (held-out) = {r.test_r_squared:.4f} | " + training
+
+
 @module.ui
 def regression_ui():
     return ui.layout_sidebar(
@@ -158,8 +178,8 @@ def regression_server(input, output, session, state: WorkbenchState, get_current
             ui.h5("Linear Regression"),
             ui.p(r.interpretation),
             ui.tags.small(
-                f"R\u00b2 = {r.r_squared:.4f} | Adj. R\u00b2 = {r.adj_r_squared:.4f} | "
-                f"F = {r.f_stat:.2f} (p = {r.f_pvalue:.4f})",
+                _r_squared_line(r)
+                + f" | F = {r.f_stat:.2f} (p = {r.f_pvalue:.4f})",
                 class_="text-muted",
             ),
             class_="alert alert-info",

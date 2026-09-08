@@ -15,6 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.model._validate import require_numeric_features
 
 
 @dataclass
@@ -46,6 +47,7 @@ def logistic_regression(
     random_state: int = 42,
 ) -> ClassificationResult:
     """Fit logistic regression."""
+    require_numeric_features(df, features, "Logistic regression")
     clean = df[[target] + features].dropna()
     X = clean[features]
     y = clean[target]
@@ -138,6 +140,7 @@ def decision_tree(
     random_state: int = 42,
 ) -> ClassificationResult:
     """Fit a decision tree classifier."""
+    require_numeric_features(df, features, "A decision tree")
     clean = df[[target] + features].dropna()
     X = clean[features]
     y = clean[target]
@@ -218,6 +221,7 @@ def random_forest(
     random_state: int = 42,
 ) -> ClassificationResult:
     """Fit a random forest classifier."""
+    require_numeric_features(df, features, "A random forest")
     clean = df[[target] + features].dropna()
     X = clean[features]
     y = clean[target]

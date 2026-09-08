@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.model._validate import require_numeric_features
 
 Figure = matplotlib.figure.Figure
 
@@ -38,6 +39,9 @@ class RegressionResult:
     X_test: pd.DataFrame | None = None
     y_train: pd.Series | None = None
     y_test: pd.Series | None = None
+    #: R2 on the held-out rows, None when no split was asked for. The
+    #: training figure alone is exactly what a Test Split was set to avoid.
+    test_r_squared: float | None = None
 
 
 def linear_regression(
@@ -48,6 +52,7 @@ def linear_regression(
     random_state: int = 42,
 ) -> RegressionResult:
     """Fit a linear regression and return comprehensive results."""
+    require_numeric_features(df, features, "Linear regression")
     clean = df[[target] + features].dropna()
     X = clean[features]
     y = clean[target]
@@ -70,6 +75,15 @@ def linear_regression(
         model = LinearRegression()
         model.fit(X, y)
         y_pred_all = model.predict(X)
+
+    # Out-of-sample R2. Without it the panel answers a Test Split of 0.3
+    # with the *training* R2 -- the number the split exists to avoid. On 25
+    # columns of pure noise that reads 0.489 where the honest figure is
+    # -1.50, and the student who split the data specifically to check is
+    # the one most misled by it.
+    test_r_sq = None
+    if X_test_out is not None and len(X_test_out) > 1:
+        test_r_sq = round(float(model.score(X_test_out, y_test_out)), 4)
 
     n = len(X_train)
     p = len(features)
@@ -143,7 +157,17 @@ def linear_regression(
     fig_qq.tight_layout()
 
     # Interpretation
-    interp_parts = [f"R\u00b2 = {r_sq:.3f} (Adjusted R\u00b2 = {adj_r_sq:.3f})."]
+    if test_r_sq is None:
+        interp_parts = [
+            f"R\u00b2 = {r_sq:.3f} (Adjusted R\u00b2 = {adj_r_sq:.3f}), "
+            f"measured on the same rows the model was fitted to."
+        ]
+    else:
+        interp_parts = [
+            f"R\u00b2 = {test_r_sq:.3f} on the {len(X_test_out):,} held-out rows "
+            f"({r_sq:.3f} on the {n:,} rows it was trained on). The held-out "
+            f"figure is the one that says whether the model generalises."
+        ]
     sig_features = coef_df[(coef_df["p_value"] < 0.05) & (coef_df["variable"] != "(Intercept)")]
     for _, row in sig_features.iterrows():
         direction = "increase" if row["coefficient"] > 0 else "decrease"
@@ -171,6 +195,7 @@ def linear_regression(
     return RegressionResult(
         coefficients=coef_df,
         r_squared=round(r_sq, 4),
+        test_r_squared=test_r_sq,
         adj_r_squared=round(adj_r_sq, 4),
         f_stat=round(f_stat, 4),
         f_pvalue=round(f_pvalue, 6),

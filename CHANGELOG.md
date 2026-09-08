@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+The Model tab, swept against an independent sklearn computation for the first
+time. **The arithmetic was clean** -- coefficients, accuracies, AUC, k-means
+sizes and PCA variance all matched to four decimals, including the leakage
+check the coursework is built around, where AUC goes 0.6335 to 0.8644 once a
+column recorded after the outcome is added. Every defect below is in how a
+number was labelled, or in a control that did nothing.
+
+### Fixed
+
+- **Regression reports the held-out R-squared.** Setting Test Split to 0.3 held
+  rows back, fitted without them, computed predictions on them -- and then
+  printed the *training* R-squared, labelled simply "R²". That is the one
+  number the split exists to avoid. On 25 columns of pure noise the panel read
+  0.4886 where the honest figure is -1.5012, and the student who split the data
+  precisely in order to check was the one most misled. Both figures are now
+  shown, each labelled by the rows it came from.
+- **The Classification Threshold slider works.** Model > Evaluate rendered it
+  and never read its value, so moving it from 0.5 to 0.9 left the confusion
+  matrix and every metric identical -- in the panel where trading precision
+  against recall is the entire lesson. The threshold now decides the
+  predictions, and the metrics say which threshold produced them.
+- **Text features are refused in words.** `job` as a feature gave
+  `could not convert string to float: 'admin.'`, a raw sklearn message naming a
+  value rather than a column, from the panel where picking `job` is the first
+  thing anyone tries. Regression, all three classifiers, clustering and PCA now
+  name the column, show its values, and point at Data > Transform > Dummy
+  Encode (One-Hot).
+
+### Changed
+
+- Accuracy is reported next to the majority-class baseline. On the campaign
+  data a model scores 0.889 while answering "No" every time scores 0.8873, and
+  accuracy alone does not show that.
+
+### Added
+
+- `tests/test_ui/test_no_dead_controls.py` -- an AST check that every control
+  the app renders is read by the code behind it. Milliseconds, no browser. It
+  found the threshold slider and reports clean otherwise.
+- `tests/test_e2e_evaluate.py` -- Model > Evaluate had no browser coverage at
+  all. Six tests, four of which fail against the old code.
+- `tests/test_model/test_honest_metrics.py`, including a standing regression for
+  the leakage result itself.
+
 ## [0.7.2] - 2026-09-07
 
 The second half of the sweep's silent-wrong-answer set. 0.7.1 fixed the two

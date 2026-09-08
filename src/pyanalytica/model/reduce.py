@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.model._validate import require_numeric_features
 
 Figure = matplotlib.figure.Figure
 
@@ -36,6 +37,7 @@ def pca_analysis(
     n_components: int | None = None,
 ) -> PCAResult:
     """Perform PCA and return comprehensive results."""
+    require_numeric_features(df, features, "PCA")
     clean = df[features].dropna()
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(clean)
