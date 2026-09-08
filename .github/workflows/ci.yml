@@ -39,6 +39,7 @@ jobs:
           --ignore=tests/test_e2e_datasets.py
           --ignore=tests/test_e2e_first_click.py
           --ignore=tests/test_e2e_transport.py
+          --ignore=tests/test_e2e_timeline.py
 
   e2e:
     name: Browser tests
@@ -72,6 +73,7 @@ jobs:
           tests/test_e2e_datasets.py
           tests/test_e2e_first_click.py
           tests/test_e2e_transport.py
+          tests/test_e2e_timeline.py
           -v
         env:
           MPLBACKEND: Agg

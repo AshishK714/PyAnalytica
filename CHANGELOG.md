@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-09-07
+
+The second half of the sweep's silent-wrong-answer set. 0.7.1 fixed the two
+that lost work or inverted a question; this one fixes the defect that drew a
+convincing chart of dates that do not exist.
+
+### Fixed
+
+- **Timeline no longer invents dates.** Any column could be chosen as the date
+  axis, and `pd.to_datetime` does not refuse much: month names with no year came
+  back as March-December of **year 1**, and the panel drew a confident
+  "subscribed_pct over Time" line chart of dates that do not exist. Probing
+  pandas found two more of the same shape -- a column of years (2019, 2020) is
+  read as *nanoseconds* since 1970, stacking every point on one instant, and
+  clock times silently pick up today's date. The date axis is now validated:
+  the dropdown offers only columns that can carry a timeline, and the library
+  refuses one it cannot justify, naming the column, showing its own values and
+  saying what to do instead. The refusal appears on the panel, where it can be
+  read, rather than in a five-second toast.
+- A column of four-digit years is still accepted -- it is a reasonable thing to
+  plot -- but the chart carries a note saying it was read as calendar years.
+  Where a choice is made on the reader's behalf, the choice travels with the
+  figure into the report and the export.
+
+### Added
+
+- `date_like_rate()` in `data.dates`, so a caller can tell "none of these are
+  dates" from "most of these are dates and a few are not". Those need different
+  advice, and giving the wrong one sends the reader to the wrong screen.
+- `tests/test_e2e_timeline.py`: the dropdown half of the fix, which only a
+  browser can check. It fails against the old code.
+
 ## [0.7.1] - 2026-09-07
 
 A hotfix for students already running the tool. Everything here came out of a

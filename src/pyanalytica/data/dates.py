@@ -57,18 +57,26 @@ _DATE_LIKE = re.compile(
 )
 
 
-def looks_like_dates(series: pd.Series, min_rate: float = MIN_PARSE_RATE) -> bool:
-    """Whether *series* is text whose values are shaped like dates."""
+def date_like_rate(series: pd.Series) -> float:
+    """Share of the non-null values that are shaped like dates, 0.0 to 1.0.
+
+    Returns 0.0 for anything not worth judging -- numbers, or too few values --
+    so a caller can treat "not dates" and "no evidence" the same way.
+    """
     if not (pd.api.types.is_object_dtype(series) or pd.api.types.is_string_dtype(series)):
-        return False
+        return 0.0
 
     values = series.dropna()
     if len(values) < MIN_VALUES:
-        return False
+        return 0.0
 
     text = values.astype(str).str.strip()
-    matches = text.map(lambda v: bool(_DATE_LIKE.match(v)))
-    return bool(matches.mean() >= min_rate)
+    return float(text.map(lambda v: bool(_DATE_LIKE.match(v))).mean())
+
+
+def looks_like_dates(series: pd.Series, min_rate: float = MIN_PARSE_RATE) -> bool:
+    """Whether *series* is text whose values are shaped like dates."""
+    return date_like_rate(series) >= min_rate
 
 
 def try_parse_dates(
