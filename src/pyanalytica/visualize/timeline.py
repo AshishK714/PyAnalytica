@@ -1,4 +1,21 @@
-"""Time series visualizations."""
+"""Time series visualizations.
+
+The date axis is the dangerous part of this panel, and it is worth saying why
+in one place.
+
+``pd.to_datetime`` does not refuse much. Given month names with no year it
+returns March through December of year 1; given a column of years like 2019 and
+2020 it reads them as *nanoseconds* since 1970 and stacks every point on the
+same instant; given clock times it silently attaches today's date. Each of those
+draws a smooth, confident, publication-quality chart of data that does not
+exist. Nothing else in this tool fabricates an answer that convincingly -- the
+rest either errors or looks obviously wrong -- so this module refuses a date
+axis it cannot justify, and says which values it could not read.
+
+Where a reading is defensible but chosen (a column of four-digit years is read
+as calendar years), the chart carries a note saying so. The assumption is on
+the figure, not only in the docs.
+"""
 
 from __future__ import annotations
 
@@ -9,8 +26,150 @@ import pandas as pd
 import seaborn as sns
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.data.dates import date_like_rate, looks_like_dates
 
 Figure = matplotlib.figure.Figure
+
+# A four-digit year outside this range is more likely a code than a date.
+YEAR_MIN, YEAR_MAX = 1500, 2999
+
+# Fewest values worth judging -- two that happen to parse are not evidence.
+MIN_VALUES = 3
+
+# Share of the values that must survive parsing for the axis to be trusted.
+MIN_PARSE_RATE = 0.95
+
+
+def _example_values(series: pd.Series, n: int = 3) -> str:
+    """A few of the actual values, for a message the reader can act on."""
+    shown = series.dropna().astype(str).unique()[:n]
+    return ", ".join(repr(str(v)) for v in shown)
+
+
+def _looks_like_years(series: pd.Series) -> bool:
+    """Whole numbers that all sit in a plausible range of calendar years."""
+    values = series.dropna()
+    if len(values) < MIN_VALUES:
+        return False
+    if not pd.api.types.is_numeric_dtype(values):
+        return False
+    if pd.api.types.is_bool_dtype(values):
+        return False
+    as_float = values.astype(float)
+    if not (as_float == as_float.round()).all():
+        return False
+    return bool(as_float.between(YEAR_MIN, YEAR_MAX).all())
+
+
+def prepare_time_axis(series: pd.Series, col_name: str) -> tuple[pd.Series, list[str]]:
+    """Turn *series* into a trustworthy date axis, or refuse and say why.
+
+    Returns the parsed dates and any notes the reader needs to see on the
+    chart. Raises ValueError -- with a message written for a student, naming
+    the column and showing its own values -- when no honest axis exists.
+    """
+    notes: list[str] = []
+
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return series, notes
+
+    if pd.api.types.is_numeric_dtype(series) and not pd.api.types.is_bool_dtype(series):
+        if _looks_like_years(series):
+            years = series.dropna().astype(int).astype(str)
+            parsed = pd.to_datetime(years, format="%Y").reindex(series.index)
+            notes.append(
+                f"'{col_name}' was read as calendar years, each plotted at 1 January."
+            )
+            return parsed, notes
+        raise ValueError(
+            f"'{col_name}' holds numbers, not dates. Read as dates they would be "
+            f"counted as nanoseconds since 1970, which puts every point within a "
+            f"fraction of a second of 1 January 1970 and draws a chart of nothing. "
+            f"Pick a column of dates, or convert this one in Data > Transform."
+        )
+
+    values = series.dropna()
+    if len(values) < MIN_VALUES:
+        raise ValueError(
+            f"'{col_name}' has too few values ({len(values)}) to plot over time."
+        )
+
+    rate = date_like_rate(series)
+    if rate < MIN_PARSE_RATE:
+        parsed_anyway = pd.to_datetime(series, errors="coerce", format="mixed")
+        years = parsed_anyway.dropna()
+        if len(years) and (years.dt.year <= 1).all():
+            raise ValueError(
+                f"'{col_name}' names months or days but carries no year "
+                f"({_example_values(series)}), so there is no timeline to draw. "
+                f"pandas would date these to year 1. Combine the month with a year "
+                f"column in Data > Transform, or choose a column of full dates."
+            )
+        if rate > 0:
+            # Most of the column is dates. Saying "this is not a date column"
+            # would be wrong and would send the reader looking in the wrong place.
+            dated = int(round(rate * len(values)))
+            raise ValueError(
+                f"Only {dated} of {len(values)} values in '{col_name}' are dates. "
+                f"Fix or filter the rest in Data > Transform before plotting them "
+                f"over time."
+            )
+        raise ValueError(
+            f"'{col_name}' does not hold dates ({_example_values(series)}). "
+            f"Choose a column of dates -- if the dataset has one that was loaded "
+            f"as text, convert it in Data > Transform."
+        )
+
+    parsed = pd.to_datetime(series, errors="coerce", format="mixed")
+    present = int(series.notna().sum())
+    kept = int(parsed.notna().sum())
+    if present and kept / present < MIN_PARSE_RATE:
+        raise ValueError(
+            f"Only {kept} of {present} values in '{col_name}' could be read as "
+            f"dates. Fix or filter the rest before plotting them over time."
+        )
+    if kept < present:
+        notes.append(
+            f"{present - kept} row(s) whose '{col_name}' could not be read as a "
+            f"date were left out."
+        )
+    return _reject_degenerate(parsed, series, col_name), notes
+
+
+def _reject_degenerate(parsed: pd.Series, original: pd.Series, col_name: str) -> pd.Series:
+    """Catch parses that succeeded but produced dates nobody meant.
+
+    Belt and braces behind the checks above: pandas gains and loses parsing
+    behaviour between versions, and the failure this guards against is silent.
+    """
+    dates = parsed.dropna()
+    if dates.empty:
+        raise ValueError(f"None of the values in '{col_name}' could be read as dates.")
+
+    years = dates.dt.year
+    if (years <= 1).all():
+        raise ValueError(
+            f"Reading '{col_name}' as dates puts every value in year 1 "
+            f"({_example_values(original)}), which means the values carry no year."
+        )
+    if not years.between(YEAR_MIN, YEAR_MAX).all():
+        raise ValueError(
+            f"Reading '{col_name}' as dates gives years outside "
+            f"{YEAR_MIN}-{YEAR_MAX}. Check the column -- these are unlikely to be "
+            f"the dates you meant."
+        )
+
+    only_day = dates.dt.normalize().unique()
+    today = pd.Timestamp.today().normalize()
+    if len(only_day) == 1 and only_day[0] == today:
+        text = original.dropna().astype(str)
+        if not text.str.contains(str(today.year)).any():
+            raise ValueError(
+                f"'{col_name}' looks like times of day, not dates "
+                f"({_example_values(original)}). Read as dates they all land on "
+                f"today, so the chart would show one day, not a timeline."
+            )
+    return parsed
 
 
 def time_series(
@@ -28,13 +187,27 @@ def time_series(
     chart_type: 'line', 'area', 'bar'
     """
     work_df = df.copy()
-    work_df[date_col] = pd.to_datetime(work_df[date_col])
+    parsed, notes = prepare_time_axis(work_df[date_col], str(date_col))
+    work_df[date_col] = parsed
+    dropped = int(work_df[date_col].isna().sum())
+    if dropped:
+        work_df = work_df.dropna(subset=[date_col])
     work_df = work_df.sort_values(date_col)
 
-    code_lines = [
-        f'df["{date_col}"] = pd.to_datetime(df["{date_col}"])',
-        f'df = df.sort_values("{date_col}")',
-    ]
+    if pd.api.types.is_numeric_dtype(df[date_col]):
+        parse_code = (
+            f'df["{date_col}"] = pd.to_datetime('
+            f'df["{date_col}"].astype(int).astype(str), format="%Y")'
+        )
+    else:
+        parse_code = (
+            f'df["{date_col}"] = pd.to_datetime('
+            f'df["{date_col}"], errors="coerce", format="mixed")'
+        )
+    code_lines = [parse_code]
+    if dropped:
+        code_lines.append(f'df = df.dropna(subset=["{date_col}"])')
+    code_lines.append(f'df = df.sort_values("{date_col}")')
 
     # Aggregate if needed
     freq_map = {"daily": "D", "weekly": "W", "monthly": "ME"}
@@ -92,6 +265,15 @@ def time_series(
     ax.set_ylabel(value_col)
     plt.xticks(rotation=45, ha="right")
     fig.tight_layout(pad=1.5)
+
+    if notes:
+        # On the figure, not in a toast: the assumption travels with the chart
+        # into the report, the export and the screenshot.
+        fig.subplots_adjust(bottom=0.28)
+        fig.text(
+            0.01, 0.01, "  ".join(notes),
+            fontsize=8, style="italic", color="#555555", va="bottom",
+        )
 
     code_lines.extend([
         f'ax.set_title("{value_col} over Time")',
