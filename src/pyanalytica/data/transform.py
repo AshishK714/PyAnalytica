@@ -296,7 +296,24 @@ def add_column_arithmetic(
     """
     _validate_expr(expr)
     result = df.copy()
-    result[new_col] = result.eval(expr)
+    try:
+        result[new_col] = result.eval(expr)
+    except TypeError as exc:
+        # The raw message here names neither the column nor the operation:
+        # "unsupported operand type(s) for +: 'str' and '<class 'str'>'".
+        # The distinction that matters is not text vs numbers -- joining two
+        # text columns works on both pandas 2.3 and 3.0 -- it is quoted text
+        # in the expression, which eval refuses on both.
+        if '"' in expr or "'" in expr:
+            raise ValueError(
+                f"Text in quotes does not work in this box, which is why "
+                f"{expr!r} failed. Joining two columns together does work, so "
+                f"drop the quoted part, or build the text you want with "
+                f"String: Replace or String: Extract."
+            ) from exc
+        raise ValueError(
+            f"{expr!r} could not be worked out. {exc}"
+        ) from exc
     code = f'df["{new_col}"] = df.eval("{expr}")'
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])
 
@@ -478,6 +495,34 @@ def str_replace(
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])
 
 
+def _has_capture_group(pattern: str) -> bool:
+    """Does this regex already capture something?
+
+    "(" opens a capturing group unless it is escaped, inside a character class,
+    or starts one of the (?...) forms -- non-capturing, lookahead, lookbehind.
+    """
+    depth_class = False
+    i = 0
+    while i < len(pattern):
+        char = pattern[i]
+        if char == "\\":
+            i += 2
+            continue
+        if depth_class:
+            if char == "]":
+                depth_class = False
+        elif char == "[":
+            depth_class = True
+        elif char == "(":
+            if pattern[i + 1: i + 2] != "?":
+                return True
+            # (?P<name>...) captures; every other (?...) form does not.
+            if pattern[i + 2: i + 3] == "P" and pattern[i + 3: i + 4] == "<":
+                return True
+        i += 1
+    return False
+
+
 def str_extract(
     df: pd.DataFrame, new_col: str, col: str, pattern: str
 ) -> tuple[pd.DataFrame, CodeSnippet]:
@@ -485,11 +530,25 @@ def str_extract(
     _require_text(df, col, "String: Extract")
     if not pattern:
         raise ValueError("Type a pattern to extract.")
+    # Wrapping the pattern in parentheses gives it a group to extract -- but
+    # only when it does not already have one. A pattern written the ordinary
+    # way, "^(\\w+)", then had two groups, str.extract returned a two-column
+    # frame, and assigning that to one column failed with "Cannot set a
+    # DataFrame with multiple columns to the single column edu_first". Every
+    # pattern with a capture group in it, which is most of them, was broken.
+    grouped = pattern if _has_capture_group(pattern) else f"({pattern})"
     result = df.copy()
-    result[new_col] = result[col].astype("string").str.extract(f"({pattern})", expand=False)
+    extracted = result[col].astype("string").str.extract(grouped, expand=True)
+    if extracted.shape[1] > 1:
+        raise ValueError(
+            f"The pattern {pattern!r} has {extracted.shape[1]} groups in "
+            f"brackets, and a column can only hold one of them. Keep the "
+            f"brackets around the part to extract and use (?:...) for the rest."
+        )
+    result[new_col] = extracted.iloc[:, 0]
     code = (
         f'df["{new_col}"] = df["{col}"].astype("string")'
-        f'.str.extract(r"({pattern})", expand=False)'
+        f'.str.extract(r"{grouped}", expand=False)'
     )
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])
 
