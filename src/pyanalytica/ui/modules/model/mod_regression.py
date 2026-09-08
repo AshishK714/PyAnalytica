@@ -12,6 +12,7 @@ from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.model.regression import linear_regression
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
+from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
@@ -55,14 +56,24 @@ def regression_ui():
             ui.input_action_button("run_btn", "Fit Model", class_="btn-primary w-100 mt-2"),
             width=300,
         ),
+        # Tier 1 -- the answer.
         ui.output_ui("model_summary"),
         decimals_ui("dec"),
         ui.output_data_frame("coef_table"),
         download_result_ui("dl"),
-        ui.h5("VIF (Multicollinearity)"),
-        ui.output_data_frame("vif_table"),
-        ui.output_plot("resid_plot", height="350px"),
-        ui.output_plot("qq_plot", height="350px"),
+        # Tier 2 -- the numbers behind it. The heading is inside the section, so
+        # it cannot appear over a table that failed to render.
+        supporting(
+            "Multicollinearity (VIF)",
+            ui.output_data_frame("vif_table"),
+        ),
+        # Tier 3 -- these check the model rather than state the result, and they
+        # need room. In the old 350px boxes their titles were clipped.
+        diagnostics(
+            "Diagnostic plots",
+            ui.output_plot("resid_plot", height=PLOT_HEIGHT),
+            ui.output_plot("qq_plot", height=PLOT_HEIGHT),
+        ),
         code_panel_ui("code"),
     )
 
