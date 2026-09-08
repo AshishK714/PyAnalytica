@@ -54,14 +54,14 @@ def grouped_boxplot(
             data=df, x=x_cat, y=y_num, kind="box",
             order=order, **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"{y_num} by {x_cat}", y=1.02)
+        g.figure.suptitle(f"{y_num} by {x_cat}")
         g.set_xticklabels(rotation=45, ha="right")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{x_cat}", y="{y_num}", kind="box"{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("{y_num} by {x_cat}", y=1.02)\n'
+            f'g.figure.suptitle("{y_num} by {x_cat}")\n'
             f'g.set_xticklabels(rotation=45, ha="right")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
@@ -114,14 +114,14 @@ def grouped_violin(
             data=df, x=x_cat, y=y_num, kind="violin",
             order=order, **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"{y_num} by {x_cat}", y=1.02)
+        g.figure.suptitle(f"{y_num} by {x_cat}")
         g.set_xticklabels(rotation=45, ha="right")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{x_cat}", y="{y_num}", kind="violin"{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("{y_num} by {x_cat}", y=1.02)\n'
+            f'g.figure.suptitle("{y_num} by {x_cat}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -171,14 +171,14 @@ def bar_of_means(
             errorbar=("ci", 95) if error_bars else None,
             **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Mean {y_num} by {x_cat}", y=1.02)
+        g.figure.suptitle(f"Mean {y_num} by {x_cat}")
         g.set_xticklabels(rotation=45, ha="right")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{x_cat}", y="{y_num}", kind="bar"{err_str}{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Mean {y_num} by {x_cat}", y=1.02)\n'
+            f'g.figure.suptitle("Mean {y_num} by {x_cat}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -230,7 +230,7 @@ def strip_plot(
             data=df, x=x_cat, y=y_num, kind="strip",
             alpha=0.5, jitter=True, **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"{y_num} by {x_cat}", y=1.02)
+        g.figure.suptitle(f"{y_num} by {x_cat}")
         g.set_xticklabels(rotation=45, ha="right")
         g.figure.set_layout_engine("tight")
         fig = g.figure
@@ -238,7 +238,7 @@ def strip_plot(
         code = (
             f'g = sns.catplot(data=df, x="{x_cat}", y="{y_num}", kind="strip", '
             f'alpha=0.5, jitter=True{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("{y_num} by {x_cat}", y=1.02)\n'
+            f'g.figure.suptitle("{y_num} by {x_cat}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )

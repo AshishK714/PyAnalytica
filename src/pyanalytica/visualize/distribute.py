@@ -49,13 +49,13 @@ def histogram(
             data=df, x=col, bins=bins, kde=kde,
             kind="hist", **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Distribution of {col}", y=1.02)
+        g.figure.suptitle(f"Distribution of {col}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.displot(data=df, x="{col}", bins={bins}{kde_str}{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Distribution of {col}", y=1.02)\n'
+            f'g.figure.suptitle("Distribution of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -112,13 +112,13 @@ def boxplot(
             data=df, x=col, kind="box",
             **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Box Plot of {col}", y=1.02)
+        g.figure.suptitle(f"Box Plot of {col}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{col}", kind="box"{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Box Plot of {col}", y=1.02)\n'
+            f'g.figure.suptitle("Box Plot of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -168,13 +168,13 @@ def violin(
             data=df, x=col, kind="violin",
             **hue_kwarg, **facet_kwargs,
         )
-        g.figure.suptitle(f"Violin Plot of {col}", y=1.02)
+        g.figure.suptitle(f"Violin Plot of {col}")
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
         code = (
             f'g = sns.catplot(data=df, x="{col}", kind="violin"{hue_str}{facet_str})\n'
-            f'g.figure.suptitle("Violin Plot of {col}", y=1.02)\n'
+            f'g.figure.suptitle("Violin Plot of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )

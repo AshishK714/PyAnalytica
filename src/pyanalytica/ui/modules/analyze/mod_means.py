@@ -12,6 +12,7 @@ from pyanalytica.analyze.means import (
     kruskal_wallis_test, mann_whitney_test, one_sample_ttest, one_way_anova, two_sample_ttest,
 )
 from pyanalytica.analyze.normality import shapiro_wilk_test
+from pyanalytica.ui.components.assumptions import assumption_lines
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, supporting
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
@@ -173,10 +174,20 @@ def means_server(input, output, session, state: WorkbenchState, get_current_df):
         checks = r.assumption_checks
         if not checks:
             return ui.div()
-        items = [ui.h6("Assumption Checks")]
-        for k, v in checks.items():
-            items.append(ui.p(f"{k}: {v}", class_="mb-1 small"))
-        return ui.div(*items, class_="mt-2 p-2 bg-light rounded")
+        # n is not on the result, so take it from the group table when the
+        # checks do not carry it -- a per-group test has no single n otherwise.
+        n = checks.get("n")
+        if n is None and getattr(r, "group_stats", None) is not None:
+            counts = [c for c in r.group_stats.columns if str(c).lower() in ("n", "count")]
+            if counts:
+                n = int(r.group_stats[counts[0]].sum())
+        lines = assumption_lines(checks, n=n, test_name=r.test_name)
+        if not lines:
+            return ui.div()
+        return ui.div(
+            *[ui.p(line, class_="mb-1 small") for line in lines],
+            class_="mt-2 p-2 bg-light rounded",
+        )
 
     download_result_server("dl", get_df=lambda: test_result_val().group_stats, filename="group_stats")
     code_panel_server("code", get_code=last_code)

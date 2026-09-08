@@ -35,6 +35,7 @@ def pca_analysis(
     df: pd.DataFrame,
     features: list[str],
     n_components: int | None = None,
+    diagnostics: bool = True,
 ) -> PCAResult:
     """Perform PCA and return comprehensive results."""
     require_numeric_features(df, features, "PCA")
@@ -73,24 +74,29 @@ def pca_analysis(
     ).round(4)
 
     # Scree plot
-    fig_scree, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    fig_scree = None
+    if diagnostics:
+        fig_scree, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-    ax1.bar(range(1, len(explained) + 1), [v * 100 for v in explained], alpha=0.7)
-    ax1.set_xlabel("Principal Component")
-    ax1.set_ylabel("Variance Explained (%)")
-    ax1.set_title("Scree Plot")
+        ax1.bar(range(1, len(explained) + 1), [v * 100 for v in explained], alpha=0.7)
+        ax1.set_xlabel("Principal Component")
+        ax1.set_ylabel("Variance Explained (%)")
+        ax1.set_title("Scree Plot")
 
-    ax2.plot(range(1, len(cumulative) + 1), [v * 100 for v in cumulative], "bo-", linewidth=2)
-    ax2.axhline(y=80, color="red", linestyle="--", label="80% threshold")
-    ax2.set_xlabel("Number of Components")
-    ax2.set_ylabel("Cumulative Variance Explained (%)")
-    ax2.set_title("Cumulative Variance")
-    ax2.legend()
-    fig_scree.set_layout_engine("tight")
+        ax2.plot(
+            range(1, len(cumulative) + 1), [v * 100 for v in cumulative],
+            "bo-", linewidth=2,
+        )
+        ax2.axhline(y=80, color="red", linestyle="--", label="80% threshold")
+        ax2.set_xlabel("Number of Components")
+        ax2.set_ylabel("Cumulative Variance Explained (%)")
+        ax2.set_title("Cumulative Variance")
+        ax2.legend()
+        fig_scree.set_layout_engine("tight")
 
     # Biplot (PC1 vs PC2)
     fig_biplot = None
-    if n_components >= 2:
+    if diagnostics and n_components >= 2:
         fig_biplot, ax = plt.subplots(figsize=(10, 8))
         # Scatter points
         ax.scatter(components[:, 0], components[:, 1], alpha=0.3, s=10)

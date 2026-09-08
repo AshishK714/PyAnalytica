@@ -30,7 +30,24 @@ from shiny import ui
 PLOT_HEIGHT = "520px"
 
 
-def supporting(title: str, *content, open: bool = False):
+def is_open(input, section_id: str) -> bool:
+    """Is that section open right now?
+
+    A panel asks this to decide whether to do the work behind a closed section.
+    Hiding an output stops it being drawn, never built, and for Cluster the
+    building is the whole cost: the elbow plot fits k-means at every k and
+    scores each with silhouette, 697ms of a 730ms run on 891 rows.
+
+    The input does not exist until the accordion has registered, and reading a
+    missing input raises, so a not-yet-there section counts as closed.
+    """
+    try:
+        return bool(input[section_id]())
+    except Exception:
+        return False
+
+
+def supporting(title: str, *content, id: str | None = None, open: bool = False):
     """A section holding the numbers behind the answer.
 
     The title lives *inside* the section. A heading placed above one sits in the
@@ -39,12 +56,13 @@ def supporting(title: str, *content, open: bool = False):
     """
     return ui.accordion(
         ui.accordion_panel(title, *content),
+        id=id,
         open=open,
         class_="mb-3",
     )
 
 
-def diagnostics(title: str, *content, open: bool = False):
+def diagnostics(title: str, *content, id: str | None = None, open: bool = False):
     """A section holding plots that check the result rather than state it.
 
     Closed by default: a diagnostic nobody asked for competes with the answer
@@ -55,6 +73,7 @@ def diagnostics(title: str, *content, open: bool = False):
             title,
             ui.card(*content, full_screen=True),
         ),
+        id=id,
         open=open,
         class_="mb-3",
     )
