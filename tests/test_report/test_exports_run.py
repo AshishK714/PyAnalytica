@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import subprocess
 import sys
 
@@ -36,15 +37,28 @@ from pyanalytica.explore.summarize import group_summarize
 from pyanalytica.report.export import export_python_script
 
 
+#: A student runs the exported script against an installed pyanalytica. From a
+#: source checkout there is nothing installed -- the parent process only finds
+#: the package through `pythonpath` in pyproject, which a subprocess does not
+#: inherit. Hand the child the same path so the test measures the script, not
+#: how the person running it happens to have set their environment up.
+_SRC = str(pathlib.Path(__file__).resolve().parents[2] / "src")
+
+
 def _run(path) -> subprocess.CompletedProcess:
     """Run a script the way a student would: their own interpreter, their cwd."""
+    existing = os.environ.get("PYTHONPATH", "")
     return subprocess.run(
         [sys.executable, str(path)],
         capture_output=True,
         text=True,
         cwd=path.parent,
         timeout=300,
-        env=dict(os.environ, MPLBACKEND="Agg"),
+        env=dict(
+            os.environ,
+            MPLBACKEND="Agg",
+            PYTHONPATH=os.pathsep.join(p for p in (_SRC, existing) if p),
+        ),
     )
 
 

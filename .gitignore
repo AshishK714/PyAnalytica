@@ -48,3 +48,4 @@ e2e_result.log
 # anything dropped at the top level is working material.
 /*.png
 /*.jpg
+/screenshots/
