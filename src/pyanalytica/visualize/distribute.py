@@ -75,9 +75,25 @@ def histogram(
         ax.set_ylabel("Count")
         fig.set_layout_engine("tight", pad=1.5)
 
+        # The shown code must run as the panel drew. With Group By the call
+        # takes data= and x=, since seaborn will not pair a bare Series with a
+        # hue *name*; and the mean/median lines the panel draws are in the
+        # code too, rather than appearing only in the picture.
+        if group_by:
+            plot_line = f'sns.histplot(data=df, x="{col}", bins={bins}{kde_str}{hue_str}, ax=ax)\n'
+        else:
+            plot_line = f'sns.histplot(df["{col}"].dropna(), bins={bins}{kde_str}, ax=ax)\n'
+        ref_code = ""
+        if ref_lines and not group_by:
+            ref_code = (
+                f'ax.axvline(df["{col}"].mean(), color="red", linestyle="--", label="Mean")\n'
+                f'ax.axvline(df["{col}"].median(), color="green", linestyle="-.", label="Median")\n'
+                f'ax.legend()\n'
+            )
         code = (
             f'fig, ax = plt.subplots(figsize=(8, 5))\n'
-            f'sns.histplot(df["{col}"].dropna(), bins={bins}{kde_str}{hue_str}, ax=ax)\n'
+            f'{plot_line}'
+            f'{ref_code}'
             f'ax.set_title("Distribution of {col}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'

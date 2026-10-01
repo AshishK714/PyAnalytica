@@ -26,6 +26,31 @@ def test_histogram_with_kde(num_df):
     assert "kde=True" in snippet.code
 
 
+def _run_snippet(snippet, df):
+    """Execute shown code the way Report Builder does, with no plt.show()."""
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    ns = {"df": df, "plt": plt, "sns": sns}
+    exec(snippet.code.replace("plt.show()", ""), ns)
+    plt.close("all")
+
+
+def test_histogram_snippet_runs(num_df):
+    """The shown code must draw what the panel drew, mean/median lines included."""
+    _, snippet = histogram(num_df, "values")
+    assert "axvline" in snippet.code
+    _run_snippet(snippet, num_df)
+
+
+def test_histogram_grouped_snippet_runs(num_df):
+    """A bare Series plus hue="cat" is rejected by seaborn; the code must use data=."""
+    _, snippet = histogram(num_df, "values", group_by="cat")
+    assert 'data=df, x="values"' in snippet.code
+    assert 'hue="cat"' in snippet.code
+    assert "axvline" not in snippet.code
+    _run_snippet(snippet, num_df)
+
+
 def test_boxplot(num_df):
     fig, snippet = boxplot(num_df, "values")
     assert fig is not None

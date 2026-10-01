@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-10-01
+
+Found by building a six-chart teaching report in Report Builder and reading
+the export. Nothing here changes a chart; everything changes whether the
+report around it is readable and whether the shown code draws that chart.
+
+### Report Builder
+
+- **A `result` table no longer repeats under every later cell.** Cells share
+  one namespace so `df` carries forward; `result` carried forward with it, so
+  a table set in step 1 was rendered again under each chart after it. A cell
+  now shows `result` only if it set it.
+- **Printed output is visible in the export.** The HTML export styles every
+  `<pre>` as a dark code block, and the stdout block inherited the white text
+  onto its light background. Its colour is now set inline.
+- **`markdown` is a core dependency.** Text cells are markdown, and a plain
+  `pip install pyanalytica` rendered a student's bold labels and tables as
+  raw asterisks and pipes. The `report` extra still exists for `nbformat`.
+
+### Shown code draws what the panel drew
+
+- **Distribute > histogram with Group By** emitted
+  `sns.histplot(df["col"].dropna(), hue="grp")`, which seaborn rejects: a bare
+  Series cannot be paired with a hue *name*. The code now uses `data=df, x=`.
+  The mean and median lines the panel draws are in the code as well.
+- **Compare > bar of means without error bars** emitted a call with no
+  `errorbar` argument, and seaborn's default then drew the 95% CI bars that
+  had been switched off. The code now says `errorbar=None`.
+
 ## [0.9.1] - 2026-09-08
 
 The seven issues that were still open, and the last piece of the disclosure

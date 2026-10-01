@@ -156,7 +156,9 @@ def bar_of_means(
     if hue and hue in df.columns:
         hue_kwarg["hue"] = hue
     hue_str = f', hue="{hue}"' if hue else ""
-    err_str = ', errorbar=("ci", 95)' if error_bars else ""
+    # seaborn draws 95% CI bars by default, so turning them off has to be
+    # written out or the shown code draws bars the panel did not.
+    err_str = ', errorbar=("ci", 95)' if error_bars else ", errorbar=None"
     facet_str = _build_facet_args(facet_col, facet_row)
 
     if facet_col or facet_row:

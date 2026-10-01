@@ -239,6 +239,12 @@ class ReportBuilder:
                 if k != "__builtins__":
                     namespace[k] = v
 
+            # ``result`` is how a cell hands back a table. The namespace is
+            # shared so that ``df`` carries from one cell to the next, which
+            # also carried ``result``: a table set in step 1 was shown again
+            # under every chart that followed. Only a cell that sets it shows it.
+            namespace.pop("result", None)
+
             # Capture stdout
             old_stdout = sys.stdout
             sys.stdout = buffer = io.StringIO()
@@ -252,8 +258,12 @@ class ReportBuilder:
 
                 # Stdout output
                 if stdout_text.strip():
+                    # color is set inline: the HTML export styles every <pre>
+                    # as a dark code block, and without it printed output came
+                    # out white on this light background -- invisible.
                     parts.append(
-                        f'<pre style="background:#f5f5f5;border-left:3px solid #90caf9;'
+                        f'<pre style="background:#f5f5f5;color:#212121;'
+                        f'border-left:3px solid #90caf9;'
                         f'padding:8px 12px;font-size:0.82rem;overflow-x:auto;'
                         f'margin:4px 0;border-radius:0 4px 4px 0;">'
                         f'{html_mod.escape(stdout_text)}</pre>'

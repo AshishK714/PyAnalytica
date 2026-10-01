@@ -40,6 +40,9 @@ dependencies = [
     "uvicorn>=0.20",
     "pyyaml>=6.0",
     "openpyxl>=3.1",
+    # Report Builder text cells are markdown. Without this a plain install
+    # showed students the raw asterisks and pipes in their own report.
+    "markdown>=3.4",
 ]
 
 [project.urls]

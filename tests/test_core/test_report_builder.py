@@ -355,6 +355,41 @@ class TestExecuteAll:
         msgs = builder.execute_all(None)
         assert "OK" in msgs[0]
 
+    def test_result_does_not_leak_into_later_cells(self, builder):
+        """A table set in cell 1 was re-shown under every cell after it."""
+        import pandas as pd
+        df = pd.DataFrame({"x": [1, 2, 3]})
+        first = ReportCell(cell_type=CellType.CODE, code="result = df.describe()")
+        second = ReportCell(cell_type=CellType.CODE, code="y = df['x'].sum()")
+        builder._cells.extend([first, second])
+        builder._renumber()
+        msgs = builder.execute_all(df)
+        assert all("OK" in m for m in msgs)
+        assert "<table" in first.output_html
+        assert "<table" not in second.output_html
+        assert "no output" in second.output_html
+
+    def test_df_still_carries_between_cells(self, builder):
+        """Clearing ``result`` must not clear the shared dataframe."""
+        import pandas as pd
+        df = pd.DataFrame({"x": [1, 2, 3]})
+        first = ReportCell(cell_type=CellType.CODE, code='df["y"] = df["x"] * 2')
+        second = ReportCell(cell_type=CellType.CODE, code='print(int(df["y"].sum()))')
+        builder._cells.extend([first, second])
+        builder._renumber()
+        builder.execute_all(df)
+        assert "12" in second.output_html
+
+    def test_stdout_block_sets_its_own_text_colour(self, builder):
+        """The export's global <pre> rule is white-on-dark; the stdout block
+        is light, so it must carry a colour of its own or print() vanishes."""
+        import pandas as pd
+        cell = ReportCell(cell_type=CellType.CODE, code='print("visible")')
+        builder._cells.append(cell)
+        builder._renumber()
+        builder.execute_all(pd.DataFrame({"x": [1]}))
+        assert "color:#212121" in cell.output_html
+
     def test_output_in_html_export(self, builder):
         import pandas as pd
         df = pd.DataFrame({"x": [1, 2, 3]})

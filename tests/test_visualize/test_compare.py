@@ -53,6 +53,14 @@ def test_bar_of_means(df):
     assert fig is not None
 
 
+def test_bar_of_means_no_error_bars_says_so(df):
+    """seaborn draws CI bars by default, so switching them off must be in the code."""
+    _, snippet = bar_of_means(df, "cat", "val", error_bars=False)
+    assert "errorbar=None" in snippet.code
+    _, snippet = bar_of_means(df, "cat", "val", error_bars=True)
+    assert 'errorbar=("ci", 95)' in snippet.code
+
+
 def test_strip_plot(df):
     fig, snippet = strip_plot(df, "cat", "val")
     assert fig is not None
