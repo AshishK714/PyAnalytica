@@ -46,6 +46,7 @@ def pivot_ui():
 @module.server
 def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    last_desc = reactive.value("Pivot table")
     get_dec = decimals_server("dec")
 
     @reactive.effect
@@ -81,7 +82,9 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
             margins=input.margins(),
             normalize=normalize,
         )
-        state.codegen.record(snippet, action="explore", description="Pivot table")
+        across = f" and {cols}" if cols else ""
+        last_desc.set(f"Pivot: {input.aggfunc()} of {vals} by {', '.join(idx)}{across}")
+        state.codegen.record(snippet, action="explore", description=last_desc())
         last_code.set(snippet.code)
         return result_df.reset_index()
 
@@ -105,4 +108,4 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
         return render.DataGrid(round_df(df, get_dec()), height="500px")
 
     download_result_server("dl", get_df=result, filename="pivot_table")
-    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Pivot table")
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description=last_desc)

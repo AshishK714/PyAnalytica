@@ -18,6 +18,102 @@ if TYPE_CHECKING:
     from pyanalytica.core.procedure import ProcedureRecorder
 
 
+#: Output that speaks to the report's author, not its reader. The export
+#: drops elements with this class when code is hidden.
+NOTE_CLASS = "pa-author-note"
+
+
+def _fmt_number(value) -> str:
+    """A table cell as a reader would want it: thousands separators, two
+    decimals for ordinary numbers, four significant figures for small ones,
+    instead of pandas' six decimals on everything."""
+    import math
+    import numbers
+
+    if isinstance(value, bool) or not isinstance(value, numbers.Number):
+        return str(value)
+    v = float(value)
+    if math.isnan(v):
+        return ""
+    if v == int(v) and abs(v) < 1e15:
+        return f"{int(v):,}"
+    if abs(v) >= 1:
+        return f"{v:,.2f}"
+    return f"{v:.4g}"
+
+
+def _column_formatter(series):
+    """One format per column, so a column does not mix "75" with "79.32".
+
+    Whole numbers get thousands separators; numbers of 1 or more get two
+    decimals; a column of small numbers (a correlation, a proportion, a
+    p-value) gets four, with "< 0.0001" rather than a zero.
+    """
+    import math
+    import numbers
+
+    import pandas as _pd
+
+    if not _pd.api.types.is_numeric_dtype(series) or _pd.api.types.is_bool_dtype(series):
+        return lambda v: "" if v is None or (isinstance(v, float) and math.isnan(v)) else str(v)
+    values = series.dropna().astype(float)
+    if values.empty:
+        return lambda v: ""
+    if ((values == values.round()) & (values.abs() < 1e15)).all():
+        return lambda v: "" if _pd.isna(v) else f"{int(v):,}"
+    if values.abs().max() >= 1:
+        return lambda v: "" if _pd.isna(v) else f"{float(v):,.2f}"
+
+    def small(v):
+        if not isinstance(v, numbers.Number) or _pd.isna(v):
+            return ""
+        if v != 0 and abs(v) < 0.00005:
+            return "< 0.0001" if v > 0 else "> -0.0001"
+        return f"{float(v):.4f}"
+    return small
+
+
+def _table_html(frame) -> str:
+    """Render a result table the way a reader expects it.
+
+    pandas' bare 0, 1, 2 row numbers go; a meaningful index (the groups of a
+    groupby, the rows of a cross-tab) becomes an ordinary first column rather
+    than a second header row; and each column is formatted consistently.
+    """
+    import pandas as _pd
+
+    frame = frame.copy()
+    if not isinstance(frame.index, _pd.RangeIndex):
+        try:
+            frame = frame.reset_index()
+        except ValueError:
+            pass  # an index name that is also a column: leave it as it is
+    if not isinstance(frame.columns, _pd.MultiIndex):
+        frame.columns.name = None
+    if isinstance(frame.index, _pd.RangeIndex):
+        show_index = False
+    else:
+        show_index = True
+    formatters = {}
+    for i, col in enumerate(frame.columns):
+        formatters[col] = _column_formatter(frame.iloc[:, i])
+    return frame.to_html(
+        classes="table table-sm table-striped",
+        border=0,
+        index=show_index,
+        formatters=formatters,
+    )
+
+
+def _error_html(e: Exception) -> str:
+    return (
+        f'<pre style="background:#fff3e0;border-left:3px solid #e53935;'
+        f'padding:8px 12px;font-size:0.82rem;color:#c62828;'
+        f'margin:4px 0;border-radius:0 4px 4px 0;">'
+        f'{type(e).__name__}: {html_mod.escape(str(e))}</pre>'
+    )
+
+
 class CellType(Enum):
     """Type of cell in a report."""
     CODE = "code"
@@ -123,6 +219,21 @@ class ReportBuilder:
 
     def remove_cell(self, cell_id: str) -> None:
         self._cells = [c for c in self._cells if c.id != cell_id]
+        self._renumber()
+
+    def move_cell_to(self, cell_id: str, position: int) -> None:
+        """Move a cell to a 1-based position, clamped to the ends.
+
+        One step per click was the only way to reorder, and arranging a
+        report from cells added in the order the work happened took dozens
+        of clicks, each redrawing the whole builder.
+        """
+        idx = self._find_index(cell_id)
+        if idx is None:
+            return
+        cell = self._cells.pop(idx)
+        target = max(0, min(int(position) - 1, len(self._cells)))
+        self._cells.insert(target, cell)
         self._renumber()
 
     def move_cell(self, cell_id: str, direction: str) -> None:
@@ -273,11 +384,7 @@ class ReportBuilder:
                 if "result" in namespace and isinstance(namespace["result"], _pd.DataFrame):
                     result_df = namespace["result"]
                     nrows = len(result_df)
-                    tbl = result_df.head(15).to_html(
-                        classes="table table-sm table-striped",
-                        max_rows=15,
-                        border=0,
-                    )
+                    tbl = _table_html(result_df.head(15))
                     if nrows > 15:
                         tbl += f'<p style="color:#999;font-size:0.8rem;">Showing 15 of {nrows} rows</p>'
                     parts.append(tbl)
@@ -298,12 +405,32 @@ class ReportBuilder:
                 if parts:
                     cell.output_html = "\n".join(parts)
                 else:
+                    # Marked so the reader view of the export can leave it
+                    # out: it tells the author the cell ran, and tells a
+                    # report's reader nothing.
                     cell.output_html = (
-                        '<span style="color:#4CAF50;font-size:0.82rem;">'
+                        f'<span class="{NOTE_CLASS}" style="color:#4CAF50;font-size:0.82rem;">'
                         'Executed successfully (no output)</span>'
                     )
                 messages.append(f"Cell {cell.order}: OK")
 
+            except FileNotFoundError as e:
+                if cell.action != "load" or df is None:
+                    cell.output_html = _error_html(e)
+                    messages.append(f"Cell {cell.order}: Error - {e}")
+                    continue
+                # A load step names a file by its bare name, which is right
+                # for the exported script run beside the file and wrong here,
+                # where the app holds the dataset already and every later
+                # cell reads it as ``df``. It used to fail in red with a raw
+                # FileNotFoundError, which read as "the report is broken".
+                cell.output_html = (
+                    f'<p class="{NOTE_CLASS}" style="color:#616161;font-size:0.85rem;margin:4px 0;">'
+                    f"Not run here: the app already holds this dataset as <code>df</code>, "
+                    f"and the cells below use it. This line loads the file when the "
+                    f"exported code runs on its own, next to the file.</p>"
+                )
+                messages.append(f"Cell {cell.order}: OK (load step not needed in the app)")
             except Exception as e:
                 cell.output_html = (
                     f'<pre style="background:#fff3e0;border-left:3px solid #e53935;'

@@ -61,6 +61,28 @@ def test_bar_of_means_no_error_bars_says_so(df):
     assert 'errorbar=("ci", 95)' in snippet.code
 
 
+def test_boxplot_code_sorts_the_way_the_chart_did(df):
+    """The code sorted by the mean whatever sort_by said."""
+    _, snippet = grouped_boxplot(df, "cat", "val", sort_by="name")
+    assert 'order = sorted(df["cat"].dropna().unique())' in snippet.code
+    _, snippet = grouped_boxplot(df, "cat", "val", sort_by="median")
+    assert ".median()" in snippet.code
+
+
+def test_bar_of_means_honours_an_order_and_writes_it_down(df):
+    fig, snippet = bar_of_means(df, "cat", "val", order=["C", "A", "B"])
+    labels = [t.get_text() for t in fig.axes[0].get_xticklabels()]
+    assert labels == ["C", "A", "B"]
+    assert "order=['C', 'A', 'B']" in snippet.code
+
+
+def test_titles_name_the_colour(df):
+    fig, snippet = bar_of_means(df, "cat", "val", hue="grp")
+    assert fig.axes[0].get_title() == "Mean val by cat, split by grp"
+    fig, snippet = grouped_boxplot(df, "cat", "val", hue="grp")
+    assert fig.axes[0].get_title() == "val by cat, split by grp"
+
+
 def test_strip_plot(df):
     fig, snippet = strip_plot(df, "cat", "val")
     assert fig is not None

@@ -170,7 +170,15 @@ def one_variable_server(input, output, session, state: WorkbenchState, get_curre
     download_result_server(
         "dl", get_df=lambda: result().answer.table if result() else None, filename="describe",
     )
+    def _report_cells():
+        r = result()
+        if r is None:
+            return []
+        opened = {k for k in ("picture", "test") if is_open(input, f"{k}_open")}
+        return [(label, snippet.code) for label, snippet in r.report_cells(opened)]
+
     code_panel_server(
         "code", get_code=last_code, state=state, action="ask",
         description=lambda: result().description if result() else "Describe",
+        get_cells=_report_cells,
     )

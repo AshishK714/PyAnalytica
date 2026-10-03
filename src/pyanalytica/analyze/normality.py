@@ -63,13 +63,13 @@ def shapiro_wilk_test(df: pd.DataFrame, col: str) -> NormalityResult:
     if is_normal:
         interp = (
             f"The distribution of {col} does not significantly deviate from "
-            f"normality (W = {stat:.4f}, p = {_fmt_p(p_val)}). "
+            f"normality (W = {stat:.4f}, {_fmt_p(p_val)}). "
             f"Parametric tests (t-test, ANOVA) are appropriate."
         )
     else:
         interp = (
             f"The distribution of {col} significantly deviates from normality "
-            f"(W = {stat:.4f}, p = {_fmt_p(p_val)}). "
+            f"(W = {stat:.4f}, {_fmt_p(p_val)}). "
             f"Consider non-parametric alternatives (Mann-Whitney U, Kruskal-Wallis)."
         )
 
@@ -115,5 +115,5 @@ def shapiro_wilk_test(df: pd.DataFrame, col: str) -> NormalityResult:
 
 def _fmt_p(p: float) -> str:
     if p < 0.001:
-        return "< .001"
-    return f"{p:.3f}"
+        return "p < .001"
+    return f"p = {p:.3f}"

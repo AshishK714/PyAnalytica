@@ -70,7 +70,8 @@ def histogram(
             ax.axvline(median_val, color="green", linestyle="-.", label=f"Median: {median_val:.2f}")
             ax.legend()
 
-        ax.set_title(f"Distribution of {col}")
+        title = f"Distribution of {col}" + (f" by {group_by}" if group_by else "")
+        ax.set_title(title)
         ax.set_xlabel(col)
         ax.set_ylabel("Count")
         fig.set_layout_engine("tight", pad=1.5)
@@ -94,7 +95,9 @@ def histogram(
             f'fig, ax = plt.subplots(figsize=(8, 5))\n'
             f'{plot_line}'
             f'{ref_code}'
-            f'ax.set_title("Distribution of {col}")\n'
+            f'ax.set_title("{title}")\n'
+            f'ax.set_xlabel("{col}")\n'
+            f'ax.set_ylabel("Count")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -246,11 +249,13 @@ def _bar_chart_split(
         data=df, kind="count", order=order, stat=stat,
         **axis, **hue_kwarg, **facets,
     )
-    if pct:
-        heading = "Percentage of all rows"
-    else:
-        heading = "Count"
-    g.figure.suptitle(f"{heading}, {col}" if pct else f"Count of {col}")
+    # The title names every variable on the chart. "Count of sex" over bars
+    # split by smoker described a different chart from the one drawn.
+    split = f" by {group_by}" if group_by else ""
+    if facets:
+        split += " in panels of " + " and ".join(facets.values())
+    heading = f"Percentage of all rows, {col}{split}" if pct else f"Count of {col}{split}"
+    g.figure.suptitle(heading)
     g.figure.set_layout_engine("tight")
 
     hue_str = f', hue="{group_by}"' if group_by else ""
@@ -263,7 +268,7 @@ def _bar_chart_split(
         f'    data=df, kind="count", {axis_str}, order=order,\n'
         f'    stat="{stat}"{hue_str}{facet_str},\n'
         f')\n'
-        f'g.figure.suptitle("{heading} of {col}")\n'
+        f'g.figure.suptitle("{heading}")\n'
         f'plt.show()'
     )
     return g.figure, CodeSnippet(
@@ -323,10 +328,14 @@ def bar_chart(
     sort_str = ".sort_values(ascending=False)" if sort else ""
     pct_str = " / counts.sum() * 100" if pct else ""
     plot_type = "barh" if orientation == "horizontal" else "bar"
+    # The value axis is labelled in the code as it is on screen; without it a
+    # report that re-ran the code drew bars with no unit on the axis.
+    value_axis = "set_xlabel" if orientation == "horizontal" else "set_ylabel"
     code = (
         f'counts = df["{col}"].value_counts(){sort_str}{pct_str}\n'
         f'fig, ax = plt.subplots(figsize=(8, 5))\n'
         f'counts.plot.{plot_type}(ax=ax)\n'
+        f'ax.{value_axis}("{ylabel}")\n'
         f'ax.set_title("{"Percentage" if pct else "Count"} of {col}")\n'
         f'plt.tight_layout()\n'
         f'plt.show()'

@@ -51,6 +51,26 @@ def test_histogram_grouped_snippet_runs(num_df):
     _run_snippet(snippet, num_df)
 
 
+def test_bar_chart_code_labels_the_value_axis(num_df):
+    """The screen had a Count axis; the code that re-ran in a report did not."""
+    _, snippet = bar_chart(num_df, "cat")
+    assert 'ax.set_ylabel("Count")' in snippet.code
+    _, snippet = bar_chart(num_df, "cat", orientation="horizontal", pct=True)
+    assert 'ax.set_xlabel("Percentage")' in snippet.code
+
+
+def test_split_bar_title_names_the_split(num_df):
+    df = num_df.assign(g=["x", "y", "y", "x"] * 25)
+    fig, snippet = bar_chart(df, "cat", group_by="g")
+    assert fig._suptitle.get_text() == "Count of cat by g"
+    assert 'suptitle("Count of cat by g")' in snippet.code
+
+
+def test_grouped_histogram_title_names_the_group(num_df):
+    fig, snippet = histogram(num_df, "values", group_by="cat")
+    assert fig.axes[0].get_title() == "Distribution of values by cat"
+
+
 def test_boxplot(num_df):
     fig, snippet = boxplot(num_df, "values")
     assert fig is not None

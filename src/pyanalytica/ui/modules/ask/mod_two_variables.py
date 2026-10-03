@@ -229,7 +229,15 @@ def two_variables_server(input, output, session, state: WorkbenchState, get_curr
     download_result_server(
         "dl", get_df=lambda: result().answer.table if result() else None, filename="relate",
     )
+    def _report_cells():
+        r = result()
+        if r is None:
+            return []
+        opened = {k for k in ("picture", "test", "model") if is_open(input, f"{k}_open")}
+        return [(f"Relate: {label}", snippet.code) for label, snippet in r.report_cells(opened)]
+
     code_panel_server(
         "code", get_code=last_code, state=state, action="ask",
         description=lambda: f"Relate: {result().description}" if result() else "Relate",
+        get_cells=_report_cells,
     )

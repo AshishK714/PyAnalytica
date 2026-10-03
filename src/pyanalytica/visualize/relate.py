@@ -48,6 +48,23 @@ def _draw_fit(ax, d: pd.DataFrame, x: str, y: str, *, color, label: str | None) 
     return True
 
 
+def _native(value):
+    """A level as a plain Python value, so its repr is valid shown code."""
+    return value.item() if hasattr(value, "item") else value
+
+
+def _fit_code(frame: str, x: str, y: str, indent: str, color: str, label: str) -> list[str]:
+    """The shown code for one fitted line drawn on ``ax`` from ``frame``."""
+    return [
+        f'{indent}part = {frame}[["{x}", "{y}"]].dropna()',
+        f'{indent}if len(part) >= 3:',
+        f'{indent}    slope, intercept = np.polyfit(part["{x}"], part["{y}"], 1)',
+        f'{indent}    r2 = part["{x}"].corr(part["{y}"]) ** 2',
+        f'{indent}    xs = np.linspace(part["{x}"].min(), part["{x}"].max(), 100)',
+        f'{indent}    ax.plot(xs, intercept + slope * xs, "--", linewidth=2, color={color}, label={label})',
+    ]
+
+
 def scatter(
     df: pd.DataFrame, x: str, y: str,
     color_by: str | None = None, size_by: str | None = None,
@@ -56,26 +73,42 @@ def scatter(
 ) -> tuple[Figure, CodeSnippet]:
     """Create a scatter plot of two numeric variables.
 
-    The trend line used to exist only on the plain path: with Color By it
-    was one line through every group, and with facets there was none at all,
-    because that branch never drew it. Now each group gets its own line in
-    its own colour, and each facet panel gets its own, so the chart answers
-    "does the pattern hold within groups?" rather than hiding it.
+    With Color By each group gets its own fitted line in its own colour, and
+    with facets each panel gets its own, so the chart answers "does the
+    pattern hold within groups?" rather than hiding it.
+
+    The group order and colours are written out in the shown code. Leaving
+    them to defaults gave the points seaborn's order (order of appearance)
+    and the lines groupby's (sorted), so a report that re-ran the code drew
+    the "yes" line in the "no" colour -- correct on screen, wrong in the
+    report, and nothing to show which was which.
     """
     plot_kwargs: dict = {"alpha": 0.6}
-    if color_by and color_by in df.columns:
-        plot_kwargs["hue"] = color_by
+    hue = color_by if color_by and color_by in df.columns else None
     if size_by and size_by in df.columns:
         plot_kwargs["size"] = size_by
     if style_by and style_by in df.columns:
         plot_kwargs["style"] = style_by
-    hue = plot_kwargs.get("hue")
     fit_ok = trend_line and x != y
 
+    hue_order: list = []
+    colors: dict = {}
+    if hue:
+        hue_order = [_native(v) for v in _levels(df[hue])]
+        colors = dict(zip(hue_order, sns.color_palette(n_colors=len(hue_order))))
+        plot_kwargs.update(hue=hue, hue_order=hue_order, palette=colors)
+
+    title = f"{y} vs {x}" + (f" by {hue}" if hue else "")
+
     # Build code snippet parts
+    setup_lines: list[str] = []
     extra_args = ""
-    if color_by:
-        extra_args += f', hue="{color_by}"'
+    if hue:
+        setup_lines = [
+            f"hue_order = {hue_order!r}",
+            "colors = dict(zip(hue_order, sns.color_palette(n_colors=len(hue_order))))",
+        ]
+        extra_args += f', hue="{hue}", hue_order=hue_order, palette=colors'
     if size_by:
         extra_args += f', size="{size_by}"'
     if style_by:
@@ -97,15 +130,17 @@ def scatter(
             # One line per panel, and per group within the panel when
             # coloured. facet_data() yields each panel's rows with its axes
             # position, which is the public way to walk a FacetGrid.
-            palette = dict(zip(_levels(df[hue]), sns.color_palette(n_colors=df[hue].nunique()))) if hue else {}
             for (row_i, col_j, _), sub in g.facet_data():
                 ax = g.axes[row_i, col_j]
                 if hue:
-                    for level, part in sub.groupby(hue, observed=True):
-                        _draw_fit(ax, part, x, y, color=palette.get(level, "red"), label=str(level))
+                    for level in hue_order:
+                        _draw_fit(ax, sub[sub[hue] == level], x, y,
+                                  color=colors[level], label=str(level))
                 else:
                     _draw_fit(ax, sub, x, y, color="red", label=None)
-        g.figure.suptitle(f"{y} vs {x}")
+                if ax.get_lines():
+                    ax.legend(fontsize="small")
+        g.figure.suptitle(title)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -115,23 +150,21 @@ def scatter(
         if facet_row:
             facet_args += f', row="{facet_row}"'
 
-        code_lines = [
+        code_lines = setup_lines + [
             f'g = sns.relplot(data=df, x="{x}", y="{y}", kind="scatter", alpha=0.6{extra_args}{facet_args})',
         ]
         if fit_ok:
             code_lines.append("for (row_i, col_j, _), sub in g.facet_data():")
             code_lines.append("    ax = g.axes[row_i, col_j]")
             if hue:
-                code_lines.append(f'    for level, part in sub.groupby("{hue}"):')
-                code_lines.append(f'        slope, intercept = np.polyfit(part["{x}"], part["{y}"], 1)')
-                code_lines.append(f'        xs = np.linspace(part["{x}"].min(), part["{x}"].max(), 100)')
-                code_lines.append('        ax.plot(xs, intercept + slope * xs, "--", label=str(level))')
+                code_lines.append("    for level in hue_order:")
+                code_lines += _fit_code(f'sub[sub["{hue}"] == level]', x, y, "        ",
+                                        "colors[level]", 'f"{level}: R² = {r2:.3f}"')
             else:
-                code_lines.append(f'    slope, intercept = np.polyfit(sub["{x}"], sub["{y}"], 1)')
-                code_lines.append(f'    xs = np.linspace(sub["{x}"].min(), sub["{x}"].max(), 100)')
-                code_lines.append('    ax.plot(xs, intercept + slope * xs, "r--")')
+                code_lines += _fit_code("sub", x, y, "    ", '"red"', 'f"R² = {r2:.3f}"')
+            code_lines.append('    ax.legend(fontsize="small")')
         code_lines += [
-            f'g.figure.suptitle("{y} vs {x}")',
+            f'g.figure.suptitle("{title}")',
             f'plt.tight_layout()',
             f'plt.show()',
         ]
@@ -140,42 +173,29 @@ def scatter(
         fig, ax = plt.subplots(figsize=(8, 6))
         sns.scatterplot(data=df, x=x, y=y, ax=ax, **plot_kwargs)
 
-        code_lines = [
+        code_lines = setup_lines + [
             f'fig, ax = plt.subplots(figsize=(8, 6))',
             f'sns.scatterplot(data=df, x="{x}", y="{y}", alpha=0.6{extra_args}, ax=ax)',
         ]
 
         if fit_ok and hue:
-            palette = dict(zip(_levels(df[hue]), sns.color_palette(n_colors=df[hue].nunique())))
-            drawn = False
-            for level, part in df.groupby(hue, observed=True):
-                drawn |= _draw_fit(ax, part, x, y, color=palette.get(level, "red"), label=str(level))
-            if drawn:
-                ax.legend()
-            code_lines.extend([
-                f'for level, part in df.groupby("{hue}"):',
-                f'    slope, intercept = np.polyfit(part["{x}"], part["{y}"], 1)',
-                f'    xs = np.linspace(part["{x}"].min(), part["{x}"].max(), 100)',
-                f'    ax.plot(xs, intercept + slope * xs, "--", label=str(level))',
-                f'ax.legend()',
-            ])
+            for level in hue_order:
+                _draw_fit(ax, df[df[hue] == level], x, y, color=colors[level], label=str(level))
+            code_lines.append("for level in hue_order:")
+            code_lines += _fit_code(f'df[df["{hue}"] == level]', x, y, "    ",
+                                    "colors[level]", 'f"{level}: R² = {r2:.3f}"')
         elif fit_ok:
-            if _draw_fit(ax, df, x, y, color="red", label=None):
-                ax.legend()
-            code_lines.extend([
-                f'from scipy import stats',
-                f'clean = df[["{x}", "{y}"]].dropna()',
-                f'slope, intercept, r, p, se = stats.linregress(clean["{x}"], clean["{y}"])',
-                f'x_range = np.linspace(clean["{x}"].min(), clean["{x}"].max(), 100)',
-                f'ax.plot(x_range, intercept + slope * x_range, "r--", label=f"R² = {{r**2:.3f}}")',
-                f'ax.legend()',
-            ])
+            _draw_fit(ax, df, x, y, color="red", label=None)
+            code_lines += _fit_code("df", x, y, "", '"red"', 'f"R² = {r2:.3f}"')
+        if fit_ok:
+            ax.legend()
+            code_lines.append("ax.legend()")
 
-        ax.set_title(f"{y} vs {x}")
+        ax.set_title(title)
         fig.set_layout_engine("tight", pad=1.5)
 
         code_lines.extend([
-            f'ax.set_title("{y} vs {x}")',
+            f'ax.set_title("{title}")',
             f'plt.tight_layout()',
             f'plt.show()',
         ])
@@ -203,6 +223,8 @@ def hexbin(
         f'fig, ax = plt.subplots(figsize=(8, 6))\n'
         f'hb = ax.hexbin(df["{x}"], df["{y}"], gridsize={gridsize}, cmap="YlOrRd", mincnt=1)\n'
         f'fig.colorbar(hb, ax=ax, label="Count")\n'
+        f'ax.set_xlabel("{x}")\n'
+        f'ax.set_ylabel("{y}")\n'
         f'ax.set_title("{y} vs {x} (hexbin)")\n'
         f'plt.tight_layout()\n'
         f'plt.show()'

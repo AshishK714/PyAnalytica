@@ -45,6 +45,7 @@ def crosstab_ui():
 @module.server
 def crosstab_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    last_desc = reactive.value("Cross-tabulation")
     get_dec = decimals_server("dec")
 
     @reactive.effect
@@ -69,7 +70,11 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
 
         normalize = input.normalize() or None
         ct_result = create_crosstab(df, row, col_var=col or None, normalize=normalize, margins=input.margins())
-        state.codegen.record(ct_result.code, action="explore", description="Cross-tabulation")
+        last_desc.set(
+            f"Cross-tab: {', '.join(row)} by {col}" if col
+            else f"Frequency table: {', '.join(row)}"
+        )
+        state.codegen.record(ct_result.code, action="explore", description=last_desc())
         last_code.set(ct_result.code.code)
         return ct_result
 
@@ -108,4 +113,4 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
         return render.DataGrid(round_df(r.table.reset_index(), get_dec()), height="400px")
 
     download_result_server("dl", get_df=lambda: result().table.reset_index(), filename="crosstab")
-    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Cross-tabulation")
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description=last_desc)

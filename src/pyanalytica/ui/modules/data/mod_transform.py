@@ -34,31 +34,37 @@ def _coerce_literal(text: str | None):
     return text
 
 
+#: The actions, keyed by the name the code uses, valued by the name a
+#: student reads. The success message used to show the key ("Transform
+#: applied: add_binned"), and the report called every cell "Transform".
+ACTIONS = {
+    "fill_missing": "Fill Missing Values",
+    "drop_missing": "Drop Missing Rows",
+    "rename_column": "Rename Column",
+    "drop_columns": "Drop Column(s)",
+    "convert_dtype": "Convert Data Type",
+    "drop_duplicates": "Drop Duplicates",
+    "dummy_encode": "Dummy Encode (One-Hot)",
+    "ordinal_encode": "Ordinal Encode",
+    "add_arithmetic": "Add Calculated Column",
+    "add_conditional": "Add Conditional Column",
+    "add_binned": "Add Binned Column",
+    "add_log": "Add Log Column",
+    "add_zscore": "Add Z-score Column",
+    "add_rank": "Add Rank Column",
+    "str_lower": "String: Lowercase",
+    "str_upper": "String: Uppercase",
+    "str_strip": "String: Strip Whitespace",
+    "str_replace": "String: Replace",
+    "str_extract": "String: Extract",
+}
+
+
 @module.ui
 def transform_ui():
     return ui.layout_sidebar(
         ui.sidebar(
-            ui.input_select("action", "Transform Action", choices={
-                "fill_missing": "Fill Missing Values",
-                "drop_missing": "Drop Missing Rows",
-                "rename_column": "Rename Column",
-                "drop_columns": "Drop Column(s)",
-                "convert_dtype": "Convert Data Type",
-                "drop_duplicates": "Drop Duplicates",
-                "dummy_encode": "Dummy Encode (One-Hot)",
-                "ordinal_encode": "Ordinal Encode",
-                "add_arithmetic": "Add Calculated Column",
-                "add_conditional": "Add Conditional Column",
-                "add_binned": "Add Binned Column",
-                "add_log": "Add Log Column",
-                "add_zscore": "Add Z-score Column",
-                "add_rank": "Add Rank Column",
-                "str_lower": "String: Lowercase",
-                "str_upper": "String: Uppercase",
-                "str_strip": "String: Strip Whitespace",
-                "str_replace": "String: Replace",
-                "str_extract": "String: Extract",
-            }),
+            ui.input_select("action", "Transform Action", choices=ACTIONS),
             ui.output_ui("action_controls"),
             ui.input_action_button("preview_btn", "Preview", class_="btn-outline-info w-100 mt-2"),
             ui.input_action_button("apply_btn", "Apply", class_="btn-primary w-100 mt-1"),
@@ -76,6 +82,7 @@ def transform_ui():
 @module.server
 def transform_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    last_desc = reactive.value("Transform")
     get_dec = decimals_server("dec")
     _prev_ds_id = reactive.value(None)
     _preview_result = reactive.value(None)  # (df, snippet) or None
@@ -355,7 +362,8 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
                     return
 
             # Find and update the dataset
-            desc = f"{action}" if action == "drop_columns" else f"{action} on '{input.col()}'"
+            label = ACTIONS.get(action, action)
+            desc = label if action == "drop_columns" else f"{label} on '{input.col()}'"
             for name in state.dataset_names():
                 if state.get(name) is get_current_df():
                     state.update(name, result, Operation(
@@ -364,8 +372,9 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
                     ))
                     state.codegen.record(snippet)
                     last_code.set(snippet.code)
+                    last_desc.set(f"Transform: {desc}")
                     _preview_result.set(None)
-                    status.done(f"Transform applied: {action}")
+                    status.done(f"Applied: {desc}.")
                     break
 
         except Exception as e:
@@ -397,4 +406,4 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
         req(df is not None)
         return render.DataGrid(round_df(df.head(100), get_dec()), height="400px")
 
-    code_panel_server("code", get_code=last_code, state=state, action="transform", description="Transform")
+    code_panel_server("code", get_code=last_code, state=state, action="transform", description=last_desc)

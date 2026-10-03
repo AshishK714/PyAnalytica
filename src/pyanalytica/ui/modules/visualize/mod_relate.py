@@ -57,6 +57,7 @@ def relate_ui():
 @module.server
 def relate_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    last_desc = reactive.value("Scatter plot")
     _last_fig = reactive.value(None)
 
     @reactive.effect
@@ -97,7 +98,8 @@ def relate_server(input, output, session, state: WorkbenchState, get_current_df)
         else:
             fig, snippet = hexbin(df, x, y)
 
-        state.codegen.record(snippet, action="visualize", description="Scatter plot")
+        last_desc.set(f"Scatter: {y} vs {x}" + (f" by {color}" if color else ""))
+        state.codegen.record(snippet, action="visualize", description=last_desc())
         last_code.set(snippet.code)
         _last_fig.set(fig)
         return fig
@@ -119,4 +121,4 @@ def relate_server(input, output, session, state: WorkbenchState, get_current_df)
         req(fig is not None)
         return fig
 
-    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Scatter plot")
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description=last_desc)

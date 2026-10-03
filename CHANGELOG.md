@@ -5,6 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1] - 2026-10-02
+
+From a student-style run of a nine-question visualization assignment done
+entirely through the app, by an agent with no knowledge of the code. Every
+chart and table came from the panels; the report built from them was wrong
+in two ways and cluttered in several. Nothing here changes an answer on
+screen. It changes whether the report says the same thing.
+
+### The report showed something other than the screen
+
+- **Relate > Two Variables sent the model's coefficients where the student
+  had seen the group table.** Add to Report sent every rung's code as one
+  cell; each rung set `result`, and a report cell shows the last. A
+  colour-split cell looked identical to a plain one. Add to Report now sends
+  one cell per rung, each with its own table: the answer always, plus each
+  section that is open on screen. Sections nobody opened (a normality test,
+  a coefficient table) stay out of a report written for a reader.
+- **Fitted lines in a coloured scatter were drawn in the other group's
+  colour when the code re-ran.** The points took seaborn's group order and
+  the lines groupby's. The shown code now writes out the group order and the
+  colours and uses them for both, and the lines carry their R² as on screen.
+- **The colour-split scatter's report table** lacked the "all" row and
+  called r by a different name from the screen. It now matches.
+
+### Report Builder
+
+- **The load step for an uploaded file** failed in red with a raw
+  `FileNotFoundError`. Inside the app the dataset is already loaded, so the
+  step now says that and is counted as run; elsewhere a missing file is
+  still an error.
+- **Reader view.** With Show Code off, the export is a report: each step's
+  description as a heading over its output, with no step numbers, action
+  badges, code, or "Executed successfully (no output)" lines, and steps that
+  showed nothing are left out. Show Code on is unchanged.
+- **Tables** drop pandas' bare 0, 1, 2 row numbers, show a grouping index as
+  an ordinary first column, and format each column one way: thousands
+  separators, two decimals, four for small numbers, "< 0.0001" for a p-value
+  that rounds to zero. They used to print six decimals.
+- **Printing.** A whole card kept on one page pushed each chart-and-table
+  card to a new sheet; a nine-question report printed to 29 pages. Cards now
+  break, charts and tables stay whole, and charts are sized to share a page.
+- **Move to.** Each cell has a position box: type a number to move it there.
+  One step per click was the only way, and arranging a report took dozens.
+- **Cell names a reader can tell apart:** "Group summary: charges by
+  smoker", "Pivot: mean of charges by smoker and bmi_group", "Transform: Add
+  Binned Column on 'bmi'", instead of five cells called "Group summary".
+- Downloads are named after the report's title, not `report.html`.
+
+### Charts and wording
+
+- Titles name every variable on the chart: "charges vs bmi by smoker",
+  "Count of region by smoker" (it said "Count of region" over bars split by
+  smoker), "Mean charges by region, split by smoker".
+- Shown code labels the value axis of count and percent bars and both axes
+  of a hexbin, as the screen does.
+- Two Variables lists the groups in one order in its table, boxplot and bar
+  chart; there were three orders on one screen. The boxplot's shown code
+  now sorts the way its chart did, which it never had.
+- With two outcomes, the cross-tab sentence describes the rarer one: it
+  said "smoker = no" for one pair and "smoker = yes" for another.
+- A colour split points to Relate > Pivot for a rows-by-columns table, and
+  number-by-category points to the overlaid histogram under Advanced.
+- "p = < .001" reads "p < .001"; "Transform applied: add_binned" reads
+  "Applied: Add Binned Column on 'bmi'."
+
+Not fixed: the on-screen legend of grouped count bars, where one swatch can
+be hard to see; legends that sit over data in some coloured charts.
+
 ## [0.10.0] - 2026-10-02
 
 The menu is organised by the shape of the question, not by the kind of

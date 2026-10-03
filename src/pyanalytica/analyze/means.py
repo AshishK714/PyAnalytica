@@ -75,7 +75,7 @@ def one_sample_ttest(
     interp = (
         f"The sample mean ({data.mean():.2f}) is {sig}{comparison} "
         f"the hypothesized value ({mu}), t({n-1}) = {t_stat:.2f}, "
-        f"p = {_fmt_p(p_val)}, d = {abs(d):.2f}."
+        f"{_fmt_p(p_val)}, d = {abs(d):.2f}."
     )
 
     alt_str = f', alternative="{alternative}"' if alternative != "two-sided" else ""
@@ -161,7 +161,7 @@ def two_sample_ttest(
         f"The mean {value_col} for {g1_name} ({np.mean(g1):.2f}) is {sig}"
         f"{comparison} {g2_name} ({np.mean(g2):.2f}), "
         f"t({df_val}) = {t_stat:.2f}{welch}, "
-        f"p = {_fmt_p(p_val)}, d = {abs(d):.2f}."
+        f"{_fmt_p(p_val)}, d = {abs(d):.2f}."
     )
 
     eq_str = "True" if equal_var else "False"
@@ -221,7 +221,7 @@ def one_way_anova(
     sig = "a statistically significant" if p_val < 0.05 else "no statistically significant"
     interp = (
         f"There is {sig} difference in {value_col} across {group_col} groups, "
-        f"F({k-1}, {n_total-k}) = {f_stat:.2f}, p = {_fmt_p(p_val)}, "
+        f"F({k-1}, {n_total-k}) = {f_stat:.2f}, {_fmt_p(p_val)}, "
         f"\u03b7\u00b2 = {eta_sq:.3f}."
     )
 
@@ -288,7 +288,7 @@ def mann_whitney_test(
     interp = (
         f"The median {value_col} for {g1_name} ({np.median(g1):.2f}) is {sig}"
         f"{comparison} {g2_name} ({np.median(g2):.2f}), "
-        f"U = {u_stat:.1f}, p = {_fmt_p(p_val)}, r = {abs(r):.2f}."
+        f"U = {u_stat:.1f}, {_fmt_p(p_val)}, r = {abs(r):.2f}."
     )
 
     alt_str = f', alternative="{alternative}"' if alternative != "two-sided" else ""
@@ -341,7 +341,7 @@ def kruskal_wallis_test(
     sig = "a statistically significant" if p_val < 0.05 else "no statistically significant"
     interp = (
         f"There is {sig} difference in {value_col} across {group_col} groups, "
-        f"H({k-1}) = {h_stat:.2f}, p = {_fmt_p(p_val)}, "
+        f"H({k-1}) = {h_stat:.2f}, {_fmt_p(p_val)}, "
         f"\u03b5\u00b2 = {eps_sq:.3f}."
     )
 
@@ -367,5 +367,5 @@ def kruskal_wallis_test(
 
 def _fmt_p(p: float) -> str:
     if p < 0.001:
-        return "< .001"
-    return f"{p:.3f}"
+        return "p < .001"
+    return f"p = {p:.3f}"

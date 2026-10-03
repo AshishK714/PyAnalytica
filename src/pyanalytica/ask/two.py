@@ -136,7 +136,17 @@ def _number_by_category(
         f"Mean {num} is highest for {where} = {_label(hi)} ({fmt(means[hi])}) and lowest for "
         f"{where} = {_label(lo)} ({fmt(means[lo])}), a gap of {fmt(means[hi] - means[lo])}."
     )
-    fig, box_code = grouped_boxplot(df, cat, num, hue=color)
+    # One order everywhere on the screen: the table is in name order, so the
+    # boxplot and the bars are too. Three orders for the same groups on one
+    # screen made a reader match bars to the wrong rows.
+    order = sorted(df[cat].dropna().unique())
+    fig, box_code = grouped_boxplot(df, cat, num, sort_by="name", hue=color)
+    notes: list[str] = []
+    if color:
+        notes.append(
+            f"For a table with {cat} in the rows and {color} in the columns, use "
+            f"Relate > Pivot: rows {cat}, column {color}, value {num}, mean."
+        )
     answer = Rung(
         title="Describe",
         sentence=sentence,
@@ -146,13 +156,14 @@ def _number_by_category(
             code=table_code.code + "\n\n" + box_code.code,
             imports=sorted(set(table_code.imports + box_code.imports)),
         ),
+        notes=notes,
     )
 
     # Rung 2: bar of means
     if second_picture:
-        bar_fig, bar_code = bar_of_means(df, cat, num, hue=color)
+        bar_fig, bar_code = bar_of_means(df, cat, num, hue=color, order=order)
     else:
-        bar_fig, bar_code = None, bar_of_means(df, cat, num, hue=color)[1]
+        bar_fig, bar_code = None, bar_of_means(df, cat, num, hue=color, order=order)[1]
     picture = Rung(
         title="Another picture",
         sentence="One bar per group at its mean, with a 95% confidence interval on each.",
@@ -216,7 +227,11 @@ def _number_by_category(
     model = Rung(title="Model: the same answer as an equation", sentence=model_sentence,
                  table=model_table, code=model_code)
 
-    next_steps = [f"Model > Regression: {num} on {cat} plus other variables."]
+    next_steps = [
+        f"Model > Regression: {num} on {cat} plus other variables.",
+        f"Advanced > Distribution Plots, histogram with Group By {cat}, overlays "
+        f"the distribution of {num} for each group.",
+    ]
     if swapped:
         next_steps.append(f"Model > Classify: predict {cat} from {num} and other variables.")
     next_steps.append(
@@ -270,14 +285,16 @@ def _number_by_number(
                              round(float(res.slope), 4), round(float(res.intercept), 4)))
         rows.append(("all", n, round(r, 4), round(slope, 4), round(intercept, 4)))
         table = pd.DataFrame(rows, columns=[color, "n", "Pearson r", "slope", "intercept"])
+        # The same table the screen shows: a row per group, then "all".
         table_code = CodeSnippet(
             code=(
                 f'rows = []\n'
-                f'for level, part in df.groupby("{color}"):\n'
+                f'groups = [(str(level), part) for level, part in df.groupby("{color}")]\n'
+                f'for level, part in groups + [("all", df)]:\n'
                 f'    part = part[["{x}", "{y}"]].dropna()\n'
                 f'    slope, intercept = np.polyfit(part["{x}"], part["{y}"], 1)\n'
                 f'    rows.append((level, len(part), part["{x}"].corr(part["{y}"]), slope, intercept))\n'
-                f'result = pd.DataFrame(rows, columns=["{color}", "n", "r", "slope", "intercept"])'
+                f'result = pd.DataFrame(rows, columns=["{color}", "n", "Pearson r", "slope", "intercept"])'
             ),
             imports=["import numpy as np", "import pandas as pd"],
         )
@@ -407,8 +424,14 @@ def _category_by_category(
     ct = create_crosstab(df, rows, col_var=y, normalize="index", margins=False)
     pct = ct.table
     # Which outcome moves most across the groups is the sentence worth saying.
-    spread = (pct.max(axis=0) - pct.min(axis=0))
-    outcome = spread.idxmax()
+    # With two outcomes both move by the same amount, and taking the first
+    # described "smoker = no" in one panel and "smoker = yes" in the next.
+    # The rarer outcome is almost always the event of interest, so say that.
+    if pct.shape[1] == 2:
+        outcome = df[y].value_counts().idxmin()
+    else:
+        spread = (pct.max(axis=0) - pct.min(axis=0))
+        outcome = spread.idxmax()
     col = pct[outcome]
     where = f"{color} / {x}" if color else x
     sentence = (

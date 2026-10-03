@@ -61,6 +61,32 @@ class AskResult:
     def rungs(self) -> list[Rung]:
         return [r for r in (self.answer, self.picture, self.test, self.model) if r is not None]
 
+    def report_cells(self, opened: set[str]) -> list[tuple[str, CodeSnippet]]:
+        """What Add to Report sends: the answer, then each section that is open.
+
+        One cell per rung. A single cell holding every rung's code set
+        ``result`` once per rung, and a report cell shows only the last one,
+        so the group table the student saw was replaced by the model's
+        coefficients -- and a colour-split cell looked the same as a plain
+        one. Leaving out the sections the student never opened keeps tests
+        and models they did not ask for out of a report written for a reader.
+
+        *opened* names the open sections: ``"picture"``, ``"test"``, ``"model"``.
+        """
+        cells: list[tuple[str, CodeSnippet]] = []
+        for key, rung, label in (
+            ("answer", self.answer, ""),
+            ("picture", self.picture, "another picture"),
+            ("test", self.test, "test"),
+            ("model", self.model, "model"),
+        ):
+            if rung is None or rung.code is None or not rung.code.code.strip():
+                continue
+            if key != "answer" and key not in opened:
+                continue
+            cells.append((f"{self.description}, {label}" if label else self.description, rung.code))
+        return cells
+
 
 def resolve_kind(series: pd.Series, treat: str = "auto") -> str:
     """Decide whether a column is read as a ``number`` or a ``category``.

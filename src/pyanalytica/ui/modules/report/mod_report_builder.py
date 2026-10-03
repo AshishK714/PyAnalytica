@@ -116,6 +116,20 @@ def _cell_card_html(c, cmd_id: str, md_update_id: str, total: int) -> str:
     toggle_lbl = "Disable" if enabled else "Enable"
     toggle_clr = "#ff9800" if enabled else "#4CAF50"
     btns: list[str] = []
+    if total > 1:
+        # Type a position to move straight there. One step per click was the
+        # only way before, and arranging a report took dozens of redraws.
+        js_move = (
+            f"if(this.value)Shiny.setInputValue('{cmd_id}', "
+            f"'moveto:{c.id}:' + this.value + ':' + Date.now())"
+        )
+        btns.append(
+            f'<label style="font-size:0.75rem;color:#757575;margin:0 2px 0 6px;">Move to</label>'
+            f'<input type="number" min="1" max="{total}" value="{c.order}" '
+            f'title="Type a position and press Enter or click away" onchange="{js_move}" '
+            f'style="width:3.6em;font-size:0.75rem;padding:0 4px;border:1px solid #bdbdbd;'
+            f'border-radius:3px;">'
+        )
     if c.order > 1:
         btns.append(_btn("&#9650;", "up", "#757575", "Move up"))
     if c.order < total:
@@ -337,6 +351,12 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
             builder.move_cell(cell_id, "up")
         elif action == "down":
             builder.move_cell(cell_id, "down")
+        elif action == "moveto" and len(parts) >= 3:
+            try:
+                builder.move_cell_to(cell_id, int(parts[2]))
+            except ValueError:
+                status.check("Type a whole number for the position to move the cell to.")
+                return
         elif action == "insert_after":
             if cell_id == "__top__":
                 cell = builder.add_markdown_cell(markdown="")
@@ -438,21 +458,28 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
             *parts,
         )
 
+    def _file_stem() -> str:
+        """The report's title as a file name; "report" when there is none."""
+        import re
+        title = (input.rpt_title() or "").strip()
+        stem = re.sub(r"[^A-Za-z0-9]+", "_", title).strip("_")
+        return stem[:80] or "report"
+
     # --- Downloads ---
-    @render_download(filename="report.html")
+    @render_download(filename=lambda: f"{_file_stem()}.html")
     def dl_html():
         builder.title = input.rpt_title().strip() or "PyAnalytica Report"
         builder.author = input.rpt_author().strip()
         builder.execute_all(get_current_df())
         yield export_report_html(builder, show_code=input.show_code()).encode("utf-8")
 
-    @render_download(filename="report.ipynb")
+    @render_download(filename=lambda: f"{_file_stem()}.ipynb")
     def dl_jupyter():
         builder.title = input.rpt_title().strip() or "PyAnalytica Report"
         builder.author = input.rpt_author().strip()
         yield export_report_jupyter(builder).encode("utf-8")
 
-    @render_download(filename="report.json")
+    @render_download(filename=lambda: f"{_file_stem()}.json")
     def dl_json():
         builder.title = input.rpt_title().strip() or "PyAnalytica Report"
         builder.author = input.rpt_author().strip()

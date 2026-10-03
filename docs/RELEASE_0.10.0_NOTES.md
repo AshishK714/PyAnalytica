@@ -1,5 +1,15 @@
 # What changed in 0.10.0, and how to test it
 
+> **0.10.1 (same day)** fixes what a student-style run of a nine-question
+> assignment found; the run's log is in the course folder
+> `MSTM_F_26/Week_6/HW4_app_test/friction_log.md`. Add to Report on Describe
+> and Relate now sends one cell per rung (the answer, plus each open section),
+> so the report shows the table the student saw; coloured scatter lines keep
+> their colours when re-run; Report Builder has a reader view (Show Code off),
+> readable tables, a Move to box, distinct cell names, a load step that
+> explains itself, and print layout that does not leave half-blank pages.
+> Details in CHANGELOG under 0.10.1. Section 4 below describes 0.10.0.
+
 Written 2 October 2026 for the next session, which will work through a
 nine-question visualization assignment in the app and report every point of
 friction. Commit b60950b, tag v0.10.0, pushed to GitHub, **not on PyPI**.

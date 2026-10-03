@@ -339,6 +339,17 @@ def _render_markdown(text: str) -> str:
     return "\n".join(parts)
 
 
+def _strip_author_notes(fragment: str) -> str:
+    """Drop the output meant for the report's author, not its reader."""
+    import re
+
+    from pyanalytica.core.report_builder import NOTE_CLASS
+
+    return re.sub(
+        rf'<(span|p) class="{NOTE_CLASS}"[^>]*>.*?</\1>', "", fragment, flags=re.DOTALL,
+    )
+
+
 def export_report_html(builder, show_code: bool = True) -> str:
     """Export a ReportBuilder as a self-contained HTML page.
 
@@ -347,7 +358,11 @@ def export_report_html(builder, show_code: bool = True) -> str:
     builder : ReportBuilder
         The report to export.
     show_code : bool
-        If False, code blocks are hidden but descriptions are still shown.
+        True gives the working view: numbered steps, action badges, code.
+        False gives the reader view: each step is its description as a
+        heading over its output, with no badges, numbers, code, or notes
+        meant for the author ("Executed successfully (no output)"). The
+        working view printed as a report for a reader carried all of that.
     """
     from pyanalytica.core.report_builder import CellType
 
@@ -438,6 +453,24 @@ def export_report_html(builder, show_code: bool = True) -> str:
         text-align: center; margin-top: 2rem;
         font-size: 0.8rem; color: #bdbdbd;
     }
+    .reader-cell { margin-bottom: 1.25rem; }
+    .reader-cell h4 { font-size: 1rem; color: #283593; margin-bottom: 0.4rem; }
+    .reader-cell img { max-width: 100%; }
+    .reader-cell table { border-collapse: collapse; font-size: 0.85rem; margin: 0.5rem 0; }
+    .reader-cell th, .reader-cell td { padding: 3px 10px; border-bottom: 1px solid #e0e0e0; text-align: right; }
+    .reader-cell th { background: #f5f5f5; }
+    /* Printing: a whole card kept on one page pushed every chart-and-table
+       card to a new sheet and left the one before mostly blank. Let cards
+       break; keep each chart and table whole, and small enough to share a
+       page with its neighbours. */
+    @media print {
+        body { background: #fff; padding: 0; max-width: none; }
+        .card { box-shadow: none; break-inside: auto; }
+        img { max-height: 3.6in; width: auto; max-width: 100%; break-inside: avoid; }
+        table { break-inside: avoid; }
+        h1, h2, h3, h4 { break-after: avoid; }
+        footer { display: none; }
+    }
     """
 
     cards: list[str] = []
@@ -446,6 +479,14 @@ def export_report_html(builder, show_code: bool = True) -> str:
         if cell.cell_type == CellType.MARKDOWN:
             rendered = _render_markdown(cell.markdown)
             cards.append(f'<div class="md-cell">{rendered}</div>')
+        elif not show_code:
+            output = _strip_author_notes(cell.output_html or "").strip()
+            if cell.output_html and not output:
+                continue  # it ran and showed nothing: nothing to say to a reader
+            cards.append(
+                f'<div class="reader-cell"><h4>{_escape(cell.description)}</h4>'
+                f'<div class="output-summary">{output}</div></div>'
+            )
         else:
             # Code cell
             step_num += 1

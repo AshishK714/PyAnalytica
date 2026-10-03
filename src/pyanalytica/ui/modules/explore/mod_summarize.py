@@ -43,6 +43,7 @@ def summarize_ui():
 @module.server
 def summarize_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    last_desc = reactive.value("Group summary")
     get_dec = decimals_server("dec")
 
     @reactive.effect
@@ -69,7 +70,9 @@ def summarize_server(input, output, session, state: WorkbenchState, get_current_
         result_df, snippet = group_summarize(
             df, group_cols, value_cols, agg_funcs if value_cols else ["count"], input.pct_total()
         )
-        state.codegen.record(snippet, action="explore", description="Group summary")
+        what = ", ".join(value_cols) if value_cols else "row count"
+        last_desc.set(f"Group summary: {what} by {', '.join(group_cols)}")
+        state.codegen.record(snippet, action="explore", description=last_desc())
         last_code.set(snippet.code)
         return result_df
 
@@ -80,4 +83,4 @@ def summarize_server(input, output, session, state: WorkbenchState, get_current_
         return render.DataGrid(round_df(df, get_dec()), height="500px")
 
     download_result_server("dl", get_df=result, filename="summary")
-    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Group summary")
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description=last_desc)

@@ -54,6 +54,7 @@ def compare_ui():
 @module.server
 def compare_server(input, output, session, state: WorkbenchState, get_current_df):
     last_code = reactive.value("")
+    last_desc = reactive.value("Group plot")
     _last_fig = reactive.value(None)
 
     @reactive.effect
@@ -94,7 +95,8 @@ def compare_server(input, output, session, state: WorkbenchState, get_current_df
         else:
             return
 
-        state.codegen.record(snippet, action="visualize", description="Comparison plot")
+        last_desc.set(f"{ct.replace('_', ' ').capitalize()}: {y} by {x}" + (f", split by {hue}" if hue else ""))
+        state.codegen.record(snippet, action="visualize", description=last_desc())
         last_code.set(snippet.code)
         _last_fig.set(fig)
         return fig
@@ -116,4 +118,4 @@ def compare_server(input, output, session, state: WorkbenchState, get_current_df
         req(fig is not None)
         return fig
 
-    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Group plot")
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description=last_desc)

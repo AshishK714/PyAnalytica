@@ -52,12 +52,17 @@ def code_panel_server(
     state=None,
     action: str = "",
     description: str | Callable[[], str] = "",
+    get_cells: Callable[[], list[tuple[str, str]]] | None = None,
 ):
     """Server logic for code panel.
 
     *state* is the WorkbenchState whose report builder receives the code;
     *action* is the badge the report shows; *description* names the cell and
     may be a callable for a panel whose result changes with its inputs.
+
+    *get_cells*, when given, returns ``(description, code)`` pairs and Add to
+    Report sends one cell per pair instead of the whole shown code -- for a
+    panel whose screen holds several results, each needing its own table.
     """
     show_code = reactive.value(False)
 
@@ -71,24 +76,28 @@ def code_panel_server(
     @reactive.effect
     @reactive.event(input.add_to_report)
     def _add():
-        code = get_code()
         if state is None:
             ui.notification_show("This panel cannot add to the report.", type="warning")
             return
-        if not code:
+        if get_cells is not None:
+            cells = get_cells() or []
+        else:
+            code = get_code()
+            label = description() if callable(description) else description
+            cells = [(label, code)] if code else []
+        if not cells:
             ui.notification_show("Run something first, then add its result to the report.", type="warning")
             return
-        state.report_builder.add_code_cell(
-            action=action,
-            description=description() if callable(description) else description,
-            code=code,
-            imports=infer_imports(code),
-        )
+        for label, code in cells:
+            state.report_builder.add_code_cell(
+                action=action, description=label, code=code, imports=infer_imports(code),
+            )
         n = state.report_builder.cell_count()
         state._notify_report()
+        added = f"{len(cells)} cells" if len(cells) > 1 else "1 cell"
         ui.notification_show(
-            f"Added to Report Builder ({n} cell{'s' if n != 1 else ''}). "
-            f"Open Report > Report Builder to run and export it.",
+            f"Added {added} to Report Builder ({n} in all). "
+            f"Open Report > Report Builder to arrange, run and export it.",
             type="message",
         )
 
