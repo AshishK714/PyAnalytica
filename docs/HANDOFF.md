@@ -1,5 +1,15 @@
 # Where we left off — 2026-09-09, after 0.9.1
 
+> **Update, 2 October 2026.** Two releases since this was written: 0.9.2 (on
+> PyPI; Report Builder and shown-code fixes) and 0.10.0 (on GitHub only, tag
+> v0.10.0, commit b60950b; students stay on 0.9.2). 0.10.0 reorganises the menu
+> by the shape of the question — Describe, Relate, Learn, Advanced — and adds
+> Colour by, Add to Report on every panel, cut points on binning, and per-group
+> scatter trend lines. Everything added, how to drive it, and the known gaps
+> are in [RELEASE_0.10.0_NOTES.md](RELEASE_0.10.0_NOTES.md). The rest of this
+> file describes 0.9.1 and its tab names; map Explore / Visualize / Analyze to
+> the new tabs as that note explains.
+
 Read this first when picking the project back up. It says what changed, what is
 verified, what is still open, and what to do next.
 
