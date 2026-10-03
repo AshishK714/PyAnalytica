@@ -179,6 +179,16 @@ class TestReportFromTheGuidedPanels:
         assert "2 OK" in status, status
         output = page.locator(_sid("report_builder", "cell_editor")).inner_text()
         assert "tip_mean" in output and "coefficient" not in output
+
+        # Show Code off hides the code in the editor, not only in the export.
+        assert "import seaborn as sns" in output
+        page.locator(_sid("report_builder", "show_code")).uncheck()
+        _wait_stable(page, 2000)
+        output = page.locator(_sid("report_builder", "cell_editor")).inner_text()
+        assert "import seaborn as sns" not in output, "code still shown with Show Code off"
+        assert "tip_mean" in output, "the output went with the code"
+        page.locator(_sid("report_builder", "show_code")).check()
+        _wait_stable(page, 1500)
         _assert_no_shiny_errors(page)
 
 

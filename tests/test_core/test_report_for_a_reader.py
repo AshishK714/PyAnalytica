@@ -45,7 +45,7 @@ def test_tables_drop_the_bare_row_numbers_and_round_for_reading(df):
     rb.add_code_cell(action="explore", description="t", code="result = df")
     rb.execute_all(df)
     html = rb.get_cells()[0].output_html
-    assert "13,270.42" in html and "13270.422265" not in html
+    assert "13,270.4223" in html and "13270.422265" not in html
     assert "<th>0</th>" not in html and "<th></th>" not in html
 
 
@@ -57,18 +57,25 @@ def test_a_meaningful_index_is_kept(df):
 
 
 @pytest.mark.parametrize("value,shown", [
-    (13270.422265, "13,270.42"), (342, "342"), (0.000123456, "0.0001235"),
+    # As the screen shows them at its default four decimals, with separators.
+    (13270.422265, "13,270.4223"), (342, "342"), (1338.0, "1,338"), (0.0, "0"),
+    (0.29938, "0.2994"), (0.000123456, "0.0001"), (75.0, "75"), (79.32, "79.32"),
+    (1e-9, "< 0.0001"), (-1e-9, "> -0.0001"),
     (0.5, "0.5"), (float("nan"), ""), ("text", "text"), (True, "True"),
 ])
 def test_number_format(value, shown):
     assert _fmt_number(value) == shown
 
 
-def test_a_column_is_formatted_one_way():
-    """A column of percentages printed "75" beside "79.32"."""
-    html = _table_html(pd.DataFrame({"no": [79.32, 75.0], "r": [0.08404, 0.8065], "p": [0.0, 1e-9]}))
-    assert "75.00" in html and "79.32" in html
-    assert "0.0840" in html and "0.8065" in html
+def test_numbers_read_as_on_screen():
+    """A retest found "1,338.00" in the report where the screen said 1338:
+    the report's own formatting rule disagreed with the screen."""
+    html = _table_html(pd.DataFrame({
+        "statistic": ["n", "Pearson r"], "value": [1338.0, 0.29938],
+    }))
+    assert ">1,338<" in html and "1,338.00" not in html
+    assert ">0.2994<" in html
+    html = _table_html(pd.DataFrame({"p": [0.0, 1e-9]}))
     assert "&lt; 0.0001" in html  # escaped in the HTML, "< 0.0001" on screen
 
 

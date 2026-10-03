@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2] - 2026-10-03
+
+A second student-style run, on 0.10.1, completed the assignment with no
+blockers and a report whose every chart matched the screen. It found three
+things worth fixing before anything else, two of them introduced in 0.10.1.
+
+- **The Show Code switch now hides code in Report Builder's editor too.**
+  It changed only Preview and the download, so switching it off left every
+  cell's code on screen and the switch looked broken.
+- **Report tables read exactly as the screen does.** The report formatted
+  numbers by its own rule, so 1338 printed as "1,338.00"; it now uses the
+  screen's four decimals with trailing zeros dropped (a p-value too small to
+  show still reads "< 0.0001"). The shown code also built some tables
+  differently from the screen: One Variable's header read "index" not
+  "statistic", Two Variables said "r_squared" not "r squared", cross-tab
+  percentages were not rounded as on screen. Each now builds the same table,
+  and a new test runs every guided-panel rung's code and compares the table
+  it leaves with the one on screen, for every kind of question.
+- **The median is labelled.** One Variable's table reads "50% (median)".
+- **The histogram's legend keeps its values in the report**, "Mean: 13270.42"
+  as on screen, not "Mean".
+- **The pointer to an overlaid histogram** now sits on the Two Variables
+  answer, where a student looks, not in the closed Model section where the
+  retest found nobody did.
+
+Not changed: automatic cell headings are not editable; column names such as
+`charges_mean`; legends over data in some on-screen charts; two-level colour
+pairs that are hard to tell apart.
+
 ## [0.10.1] - 2026-10-02
 
 From a student-style run of a nine-question visualization assignment done

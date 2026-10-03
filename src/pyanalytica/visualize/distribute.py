@@ -86,9 +86,12 @@ def histogram(
             plot_line = f'sns.histplot(df["{col}"].dropna(), bins={bins}{kde_str}, ax=ax)\n'
         ref_code = ""
         if ref_lines and not group_by:
+            # The legend carries the values, as on screen; a report that
+            # re-ran this code showed "Mean / Median" with no numbers.
             ref_code = (
-                f'ax.axvline(df["{col}"].mean(), color="red", linestyle="--", label="Mean")\n'
-                f'ax.axvline(df["{col}"].median(), color="green", linestyle="-.", label="Median")\n'
+                f'mean_val, median_val = df["{col}"].mean(), df["{col}"].median()\n'
+                f'ax.axvline(mean_val, color="red", linestyle="--", label=f"Mean: {{mean_val:.2f}}")\n'
+                f'ax.axvline(median_val, color="green", linestyle="-.", label=f"Median: {{median_val:.2f}}")\n'
                 f'ax.legend()\n'
             )
         code = (

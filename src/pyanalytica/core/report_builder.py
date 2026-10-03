@@ -23,10 +23,21 @@ if TYPE_CHECKING:
 NOTE_CLASS = "pa-author-note"
 
 
-def _fmt_number(value) -> str:
-    """A table cell as a reader would want it: thousands separators, two
-    decimals for ordinary numbers, four significant figures for small ones,
-    instead of pandas' six decimals on everything."""
+#: The screen's default precision (the decimals control on every panel).
+#: Report tables use the same, so a number reads the same in both places.
+REPORT_DECIMALS = 4
+
+
+def _fmt_number(value, decimals: int = REPORT_DECIMALS) -> str:
+    """A table cell the way the screen shows it, with thousands separators.
+
+    Rounded to the screen's four decimals, trailing zeros dropped, so 1338
+    reads "1,338" and not "1,338.00", and 0.29938 reads "0.2994" as it does
+    on screen. A retest found the report and the screen disagreeing on the
+    same numbers when the report formatted by its own rules. The one
+    departure: a number that rounds to zero but is not zero (a tiny p-value)
+    reads "< 0.0001" rather than a zero it is not.
+    """
     import math
     import numbers
 
@@ -35,42 +46,14 @@ def _fmt_number(value) -> str:
     v = float(value)
     if math.isnan(v):
         return ""
-    if v == int(v) and abs(v) < 1e15:
-        return f"{int(v):,}"
-    if abs(v) >= 1:
-        return f"{v:,.2f}"
-    return f"{v:.4g}"
-
-
-def _column_formatter(series):
-    """One format per column, so a column does not mix "75" with "79.32".
-
-    Whole numbers get thousands separators; numbers of 1 or more get two
-    decimals; a column of small numbers (a correlation, a proportion, a
-    p-value) gets four, with "< 0.0001" rather than a zero.
-    """
-    import math
-    import numbers
-
-    import pandas as _pd
-
-    if not _pd.api.types.is_numeric_dtype(series) or _pd.api.types.is_bool_dtype(series):
-        return lambda v: "" if v is None or (isinstance(v, float) and math.isnan(v)) else str(v)
-    values = series.dropna().astype(float)
-    if values.empty:
-        return lambda v: ""
-    if ((values == values.round()) & (values.abs() < 1e15)).all():
-        return lambda v: "" if _pd.isna(v) else f"{int(v):,}"
-    if values.abs().max() >= 1:
-        return lambda v: "" if _pd.isna(v) else f"{float(v):,.2f}"
-
-    def small(v):
-        if not isinstance(v, numbers.Number) or _pd.isna(v):
-            return ""
-        if v != 0 and abs(v) < 0.00005:
-            return "< 0.0001" if v > 0 else "> -0.0001"
-        return f"{float(v):.4f}"
-    return small
+    floor = 0.5 * 10 ** -decimals
+    if v != 0 and abs(v) < floor:
+        limit = f"{10 ** -decimals:.{decimals}f}"
+        return f"< {limit}" if v > 0 else f"> -{limit}"
+    r = round(v, decimals)
+    if r == int(r) and abs(r) < 1e15:
+        return f"{int(r):,}"
+    return f"{r:,.{decimals}f}".rstrip("0").rstrip(".")
 
 
 def _table_html(frame) -> str:
@@ -78,7 +61,7 @@ def _table_html(frame) -> str:
 
     pandas' bare 0, 1, 2 row numbers go; a meaningful index (the groups of a
     groupby, the rows of a cross-tab) becomes an ordinary first column rather
-    than a second header row; and each column is formatted consistently.
+    than a second header row; numbers read as they do on screen.
     """
     import pandas as _pd
 
@@ -90,18 +73,12 @@ def _table_html(frame) -> str:
             pass  # an index name that is also a column: leave it as it is
     if not isinstance(frame.columns, _pd.MultiIndex):
         frame.columns.name = None
-    if isinstance(frame.index, _pd.RangeIndex):
-        show_index = False
-    else:
-        show_index = True
-    formatters = {}
-    for i, col in enumerate(frame.columns):
-        formatters[col] = _column_formatter(frame.iloc[:, i])
+    show_index = not isinstance(frame.index, _pd.RangeIndex)
     return frame.to_html(
         classes="table table-sm table-striped",
         border=0,
         index=show_index,
-        formatters=formatters,
+        formatters={col: _fmt_number for col in frame.columns},
     )
 
 

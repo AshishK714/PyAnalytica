@@ -141,7 +141,12 @@ def _number_by_category(
     # screen made a reader match bars to the wrong rows.
     order = sorted(df[cat].dropna().unique())
     fig, box_code = grouped_boxplot(df, cat, num, sort_by="name", hue=color)
-    notes: list[str] = []
+    # On the answer, where a student looks, not in the closed Model section,
+    # where a retest found nobody did.
+    notes: list[str] = [
+        f"To see the whole distribution of {num} for each {cat} group, overlaid, "
+        f"use Advanced > Distribution Plots: histogram, Group By {cat}."
+    ]
     if color:
         notes.append(
             f"For a table with {cat} in the rows and {color} in the columns, use "
@@ -227,11 +232,7 @@ def _number_by_category(
     model = Rung(title="Model: the same answer as an equation", sentence=model_sentence,
                  table=model_table, code=model_code)
 
-    next_steps = [
-        f"Model > Regression: {num} on {cat} plus other variables.",
-        f"Advanced > Distribution Plots, histogram with Group By {cat}, overlays "
-        f"the distribution of {num} for each group.",
-    ]
+    next_steps = [f"Model > Regression: {num} on {cat} plus other variables."]
     if swapped:
         next_steps.append(f"Model > Classify: predict {cat} from {num} and other variables.")
     next_steps.append(
@@ -313,7 +314,7 @@ def _number_by_number(
                 f'clean = df[["{x}", "{y}"]].dropna()\n'
                 f'r = clean["{x}"].corr(clean["{y}"])\n'
                 f'slope, intercept = np.polyfit(clean["{x}"], clean["{y}"], 1)\n'
-                f'result = pd.DataFrame({{"statistic": ["n", "r", "r_squared", "slope", "intercept"],\n'
+                f'result = pd.DataFrame({{"statistic": ["n", "Pearson r", "r squared", "slope", "intercept"],\n'
                 f'                       "value": [len(clean), r, r**2, slope, intercept]}})'
             ),
             imports=["import numpy as np", "import pandas as pd"],
@@ -443,7 +444,7 @@ def _category_by_category(
     rows_expr = f'[df["{color}"], df["{x}"]]' if color else f'df["{x}"]'
     table_code = CodeSnippet(
         code=(
-            f'result = pd.crosstab({rows_expr}, df["{y}"], normalize="index") * 100'
+            f'result = (pd.crosstab({rows_expr}, df["{y}"], normalize="index") * 100).round(1)'
         ),
         imports=["import pandas as pd"],
     )

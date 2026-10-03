@@ -41,14 +41,18 @@ def _number(df: pd.DataFrame, col: str, reading: str, second_picture: bool) -> A
     clean = df[col].dropna()
     n_missing = int(df[col].isna().sum())
 
-    summary = clean.describe().to_frame("value")
-    summary.loc["missing"] = n_missing
-    table = summary.reset_index().rename(columns={"index": "statistic"})
+    # The screen's table and the report's are built by the same steps, so a
+    # report reads "statistic / value" and "50% (median)" exactly as the
+    # screen does. They differed ("index", no median label) when each was
+    # written separately.
+    summary = clean.describe().rename(index={"50%": "50% (median)"})
+    summary["missing"] = n_missing
+    table = summary.rename_axis("statistic").reset_index(name="value")
     table_code = CodeSnippet(
         code=(
-            f'summary = df["{col}"].describe().to_frame("value")\n'
-            f'summary.loc["missing"] = df["{col}"].isna().sum()\n'
-            f'result = summary'
+            f'summary = df["{col}"].describe().rename(index={{"50%": "50% (median)"}})\n'
+            f'summary["missing"] = df["{col}"].isna().sum()\n'
+            f'result = summary.rename_axis("statistic").reset_index(name="value")'
         ),
         imports=["import pandas as pd"],
     )
@@ -135,7 +139,8 @@ def _category(df: pd.DataFrame, col: str, reading: str, second_picture: bool) ->
     table_code = CodeSnippet(
         code=(
             f'counts = df["{col}"].value_counts()\n'
-            f'result = pd.DataFrame({{"count": counts, "percent": (counts / counts.sum() * 100).round(1)}})'
+            f'result = pd.DataFrame({{"count": counts, "percent": (counts / counts.sum() * 100).round(1)}})\n'
+            f'result = result.rename_axis("{col}").reset_index()'
         ),
         imports=["import pandas as pd"],
     )

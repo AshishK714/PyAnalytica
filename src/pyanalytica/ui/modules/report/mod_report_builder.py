@@ -93,7 +93,7 @@ def _insert_button_html(after_id: str, cmd_id: str) -> str:
     )
 
 
-def _cell_card_html(c, cmd_id: str, md_update_id: str, total: int) -> str:
+def _cell_card_html(c, cmd_id: str, md_update_id: str, total: int, show_code: bool = True) -> str:
     enabled = c.enabled
     opacity = "1" if enabled else "0.5"
     border_color = "#4CAF50" if enabled else "#bdbdbd"
@@ -162,10 +162,13 @@ def _cell_card_html(c, cmd_id: str, md_update_id: str, total: int) -> str:
         desc_style = "font-size:0.9rem;margin:4px 0 2px 0;"
         if not enabled:
             desc_style += "text-decoration:line-through;color:#999;"
+        # The switch acts here too. It used to change only Preview and the
+        # download, so turning it off left every cell's code on screen and
+        # the switch looked broken.
         content = (
             f'{action_badge}'
             f'<p style="{desc_style}">{_esc(c.description)}</p>'
-            f'{_code_block_html(c.code, c.imports)}'
+            f'{_code_block_html(c.code, c.imports) if show_code else ""}'
         )
         # Append execution output if present
         if c.output_html:
@@ -447,10 +450,11 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
             )
 
         total = len(cells)
+        show = bool(input.show_code())
         parts: list[ui.TagChild] = []
         parts.append(ui.HTML(_insert_button_html("__top__", cell_cmd_id)))
         for c in cells:
-            parts.append(ui.HTML(_cell_card_html(c, cell_cmd_id, md_update_id, total)))
+            parts.append(ui.HTML(_cell_card_html(c, cell_cmd_id, md_update_id, total, show)))
             parts.append(ui.HTML(_insert_button_html(c.id, cell_cmd_id)))
 
         return ui.tags.div(
