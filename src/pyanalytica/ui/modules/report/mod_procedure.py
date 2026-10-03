@@ -19,6 +19,7 @@ _ACTION_COLORS: dict[str, tuple[str, str]] = {
     "transform": ("#fff3e0", "#e65100"),
     "visualize": ("#e8f5e9", "#2e7d32"),
     "analyze":   ("#f3e5f5", "#6a1b9a"),
+    "ask":       ("#e0f2f1", "#00695c"),
     "model":     ("#ede7f6", "#4527a0"),
     "merge":     ("#e0f7fa", "#00695c"),
     "filter":    ("#fff9c4", "#f57f17"),

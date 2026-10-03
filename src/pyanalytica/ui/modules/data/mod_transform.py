@@ -168,7 +168,16 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
         elif action == "add_binned":
             controls.append(ui.input_text("new_col_name", "New Column Name",
                 value=_prior("new_col_name", default="")))
-            controls.append(ui.input_numeric("n_bins", "Number of bins",
+            controls.append(ui.input_text("bin_edges",
+                "Cut points (comma-separated, optional)",
+                value=_prior("bin_edges", default=""),
+                placeholder="e.g. 30  or  18, 35, 50"))
+            controls.append(ui.p(
+                "A value equal to a cut point goes in the upper bin, so 30 gives "
+                '"under 30" and "30 and above". Leave blank for equal-width bins.',
+                class_="text-muted small",
+            ))
+            controls.append(ui.input_numeric("n_bins", "Number of equal-width bins (if no cut points)",
                 value=_prior("n_bins", default=3), min=2, max=20))
             controls.append(ui.input_text("bin_labels",
                 "Bin labels (comma-separated, optional)",
@@ -255,9 +264,14 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
             )
         elif action == "add_binned":
             new_name = (input.new_col_name() or "").strip() or f"{col}_bin"
-            n_bins = int(input.n_bins() or 3)
             raw_labels = (input.bin_labels() or "").strip()
             labels = [s.strip() for s in raw_labels.split(",") if s.strip()] or None
+            raw_edges = (input.bin_edges() or "").strip()
+            if raw_edges:
+                series = pd.to_numeric(df[col], errors="coerce")
+                edges = transform.cut_points(raw_edges, float(series.min()), float(series.max()))
+                return transform.add_column_binned(df, new_name, col, edges, labels, right=False)
+            n_bins = int(input.n_bins() or 3)
             return transform.add_column_binned(df, new_name, col, n_bins, labels)
         elif action == "str_lower":
             return transform.str_lower(df, col)
@@ -383,4 +397,4 @@ def transform_server(input, output, session, state: WorkbenchState, get_current_
         req(df is not None)
         return render.DataGrid(round_df(df.head(100), get_dec()), height="400px")
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="transform", description="Transform")

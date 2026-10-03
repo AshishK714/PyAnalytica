@@ -192,6 +192,7 @@ workbench/                          # Root package (name TBD, PyPI check needed)
 │   │   └── chat_panel.py           # Phase 4: agent sidebar
 │   └── modules/                    # One Shiny module per page
 │       ├── data/                   # mod_load, mod_profile, mod_view, mod_transform, mod_combine, mod_export
+│       ├── ask/                    # mod_one_variable, mod_two_variables (Describe / Relate front door)
 │       ├── explore/                # mod_summarize, mod_pivot, mod_crosstab
 │       ├── visualize/              # mod_distribute, mod_relate, mod_compare, mod_correlate, mod_timeline
 │       ├── analyze/                # mod_means, mod_proportions, mod_correlation

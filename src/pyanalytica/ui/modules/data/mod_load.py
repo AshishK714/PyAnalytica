@@ -105,4 +105,4 @@ def load_server(input, output, session, state: WorkbenchState, get_current_df):
         req(df is not None)
         return render.DataGrid(round_df(df.head(100), get_dec()), height="400px")
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="load", description="Load dataset")

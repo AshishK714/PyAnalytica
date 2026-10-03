@@ -40,6 +40,9 @@ MAX_UNCONDITIONAL_OUTPUTS = 4
 CONVERTED = {
     "regression", "cluster", "reduce", "evaluate", "simulate",
     "proportions", "means",
+    # Built to the tiering from the start: the answer rung on screen, the
+    # picture, test and model rungs behind sections.
+    "one_variable", "two_variables",
 }
 
 #: The rest of the agreed tiering from docs/DISCLOSURE.md, with the tier-2 or

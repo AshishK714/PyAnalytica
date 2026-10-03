@@ -294,4 +294,4 @@ def evaluate_server(input, output, session, state: WorkbenchState, get_current_d
             "regression_error" if reg_result() is not None else "confusion_matrix"
         ),
     )
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="model", description="Model evaluation")

@@ -178,4 +178,4 @@ def combine_server(input, output, session, state: WorkbenchState, get_current_df
         req(df is not None)
         return render.DataGrid(df.head(100), height="400px")
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="merge", description="Combine datasets")

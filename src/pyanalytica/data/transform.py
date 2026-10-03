@@ -357,11 +357,72 @@ def _bin_labels(intervals) -> list[str]:
     return [str(iv) for iv in intervals]
 
 
+def _edge_labels(edges: list[float]) -> list[str]:
+    """Name left-closed bins the way a reader would say them: "under 30",
+    "30 to under 50", "50 and above"."""
+    def _n(v: float) -> str:
+        return f"{v:g}"
+    names = []
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        if lo == -np.inf:
+            names.append(f"under {_n(hi)}")
+        elif hi == np.inf:
+            names.append(f"{_n(lo)} and above")
+        else:
+            names.append(f"{_n(lo)} to under {_n(hi)}")
+    return names
+
+
+def cut_points(text: str, lo: float, hi: float) -> list[float]:
+    """Turn "30" or "18, 35, 50" into bin edges that cover the column.
+
+    A student gives the boundaries that matter; the ends are padded with
+    infinities when the first cut point sits above the minimum or the last
+    at or below the maximum, so no value falls outside the bins.
+    """
+    try:
+        edges = sorted(float(s) for s in text.split(",") if s.strip())
+    except ValueError:
+        raise ValueError(
+            "Cut points must be numbers separated by commas, for example "
+            "30, or 18, 35, 50."
+        ) from None
+    if not edges:
+        raise ValueError("Give at least one cut point, for example 30.")
+    if len(set(edges)) != len(edges):
+        raise ValueError("Each cut point must be different from the others.")
+    if edges[0] > lo:
+        edges.insert(0, -np.inf)
+    if edges[-1] <= hi:
+        edges.append(np.inf)
+    return edges
+
+
+def _bins_repr(bins: int | list) -> str:
+    if isinstance(bins, int):
+        return repr(bins)
+    parts = []
+    for e in bins:
+        if e == np.inf:
+            parts.append("np.inf")
+        elif e == -np.inf:
+            parts.append("-np.inf")
+        else:
+            parts.append(repr(e))
+    return "[" + ", ".join(parts) + "]"
+
+
 def add_column_binned(
     df: pd.DataFrame, new_col: str, source_col: str,
-    bins: int | list, labels: list[str] | None = None
+    bins: int | list, labels: list[str] | None = None,
+    *, right: bool = True,
 ) -> tuple[pd.DataFrame, CodeSnippet]:
-    """Add a column with binned/discretized values."""
+    """Add a column with binned/discretized values.
+
+    *bins* is a count of equal-width bins or a list of edges. With edges,
+    ``right=False`` makes each bin include its lower edge, which is what a
+    cut point means to a reader: 30 gives "under 30" and "30 and above".
+    """
     _require_numeric(df, source_col, "Binning")
     if labels is not None:
         n_bins = bins if isinstance(bins, int) else len(bins) - 1
@@ -371,9 +432,12 @@ def add_column_binned(
                 "Give one label per bin, or leave the labels blank."
             )
     result = df.copy()
-    binned = pd.cut(result[source_col], bins=bins, labels=labels)
+    binned = pd.cut(result[source_col], bins=bins, labels=labels, right=right)
     shown = labels
-    if labels is None:
+    if labels is None and isinstance(bins, list) and not right:
+        shown = _edge_labels(bins)
+        binned = binned.cat.rename_categories(shown)
+    elif labels is None:
         # pd.cut names the bins with pandas Interval objects. They are correct,
         # but nothing downstream can serialise them: the data grid raises
         # "Object of type Interval is not JSON serializable" from inside Shiny's
@@ -384,11 +448,15 @@ def add_column_binned(
         binned = binned.cat.rename_categories(shown)
     result[new_col] = binned
 
+    right_str = ", right=False" if not right else ""
     code = (
         f'df["{new_col}"] = pd.cut(df["{source_col}"], '
-        f'bins={bins!r}, labels={shown!r})'
+        f'bins={_bins_repr(bins)}, labels={shown!r}{right_str})'
     )
-    return result, CodeSnippet(code=code, imports=["import pandas as pd"])
+    imports = ["import pandas as pd"]
+    if "np.inf" in code:
+        imports.append("import numpy as np")
+    return result, CodeSnippet(code=code, imports=imports)
 
 
 def add_column_log(

@@ -209,4 +209,4 @@ def classify_server(input, output, session, state: WorkbenchState, get_current_d
         return r.feature_importance
 
     download_result_server("dl", get_df=_get_classify_detail, filename="model_details")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="model", description="Classification")

@@ -186,4 +186,4 @@ def cluster_server(input, output, session, state: WorkbenchState, get_current_df
         get_df=lambda: result().cluster_profiles.reset_index(),
         filename="cluster_profiles",
     )
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="model", description="Clustering")

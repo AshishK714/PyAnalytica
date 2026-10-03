@@ -77,7 +77,7 @@ class TestPivotColumnLabelTypes:
     ])
     def test_pivot_renders_for_any_column_type(self, page, columns_var, label):
         _load_bundled(page, "tips")
-        _nav_to(page, "Explore", "Pivot")
+        _nav_to(page, "Relate", "Pivot")
         _wait_stable(page, 2000)
 
         _select_option(page, _sid("pivot", "index"), "day")
@@ -98,13 +98,13 @@ class TestBinaryIntegerColumns:
 
     def test_crosstab_offers_a_binary_outcome(self, page):
         _load_bundled(page, "titanic")
-        _nav_to(page, "Explore", "Cross-tab")
+        _nav_to(page, "Relate", "Cross-tab")
         _wait_stable(page, 2500)
         _assert_choices_include(page, _sid("crosstab", "col_var"), ["Survived"])
 
     def test_crosstab_runs_on_a_binary_outcome(self, page):
         _load_bundled(page, "titanic")
-        _nav_to(page, "Explore", "Cross-tab")
+        _nav_to(page, "Relate", "Cross-tab")
         _wait_stable(page, 2500)
         _select_option(page, _sid("crosstab", "row_var"), "Sex")
         _select_option(page, _sid("crosstab", "col_var"), "Survived")
@@ -118,7 +118,7 @@ class TestDegenerateSelections:
 
     def test_correlate_with_one_column_explains_itself(self, page):
         _load_bundled(page, "titanic")
-        _nav_to(page, "Visualize", "Correlate")
+        _nav_to(page, "Describe", "Correlate")
         _wait_stable(page, 2500)
         _select_multiple(page, _sid("correlate", "cols"), ["Age"])
         _click_button(page, _sid("correlate", "run_btn"))
@@ -140,7 +140,7 @@ class TestDegenerateSelections:
 
     def test_correlate_with_several_columns_draws(self, page):
         _load_bundled(page, "titanic")
-        _nav_to(page, "Visualize", "Correlate")
+        _nav_to(page, "Describe", "Correlate")
         _wait_stable(page, 2500)
         _select_multiple(page, _sid("correlate", "cols"), ["Age", "Fare", "Pclass"])
         _click_button(page, _sid("correlate", "run_btn"))
@@ -187,10 +187,14 @@ class TestErrorTextIsNotOutput:
         _assert_no_error_text(page, "body")
         _assert_no_shiny_errors(page)
 
-    def test_every_visualize_tab_is_free_of_error_text(self, page):
+    def test_every_chart_tab_is_free_of_error_text(self, page):
         _load_bundled(page, "titanic")
-        for tab in ("Distribute", "Relate", "Compare", "Correlate", "Timeline"):
-            _nav_to(page, "Visualize", tab)
+        for top, tab in (
+            ("Describe", "One Variable"), ("Describe", "Correlate"), ("Describe", "Timeline"),
+            ("Relate", "Two Variables"),
+            ("Advanced", "Distribution Plots"), ("Advanced", "Scatter"), ("Advanced", "Group Plots"),
+        ):
+            _nav_to(page, top, tab)
             _wait_stable(page, 1500)
             _assert_no_error_text(page, "body")
 
@@ -220,7 +224,7 @@ class TestDateParsingOnUpload:
             _click_button(page, _sid("load", "load_btn"))
             _wait_stable(page, 4000)
 
-            _nav_to(page, "Visualize", "Timeline")
+            _nav_to(page, "Describe", "Timeline")
             _wait_stable(page, 2500)
             options = [
                 o.strip()
@@ -242,7 +246,7 @@ class TestPracticeDrills:
 
     def test_a_correct_answer_says_so(self, page):
         _load_bundled(page, "tips")
-        _nav_to(page, "Practice")
+        _nav_to(page, "Learn", "Practice")
         _wait_stable(page, 2500)
 
         page.locator(_sid("practice", "ans_rows")).fill("244")
@@ -255,7 +259,7 @@ class TestPracticeDrills:
 
     def test_a_wrong_answer_says_so_and_offers_the_hint(self, page):
         _load_bundled(page, "tips")
-        _nav_to(page, "Practice")
+        _nav_to(page, "Learn", "Practice")
         _wait_stable(page, 2500)
 
         # 25.29 was the answer under the simulated tips data; against the
@@ -271,7 +275,7 @@ class TestPracticeDrills:
     def test_each_question_has_its_own_feedback(self, page):
         """All six were writing to one output, so only one could ever show."""
         _load_bundled(page, "tips")
-        _nav_to(page, "Practice")
+        _nav_to(page, "Learn", "Practice")
         _wait_stable(page, 2500)
 
         page.locator(_sid("practice", "ans_rows")).fill("244")
@@ -283,7 +287,7 @@ class TestPracticeDrills:
 
     def test_the_dataset_hint_clears_once_loaded(self, page):
         _load_bundled(page, "tips")
-        _nav_to(page, "Practice")
+        _nav_to(page, "Learn", "Practice")
         _wait_stable(page, 2500)
         hint = page.locator(_sid("practice", "dataset_hint")).inner_text().lower()
         assert "using the tips dataset" in hint, (
@@ -292,7 +296,7 @@ class TestPracticeDrills:
 
     def test_score_counts_attempts_and_resets(self, page):
         _load_bundled(page, "tips")
-        _nav_to(page, "Practice")
+        _nav_to(page, "Learn", "Practice")
         _wait_stable(page, 2500)
 
         page.locator(_sid("practice", "ans_rows")).fill("244")

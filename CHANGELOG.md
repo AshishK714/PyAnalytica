@@ -5,6 +5,96 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-10-02
+
+The menu is organised by the shape of the question, not by the kind of
+output. The old Explore, Visualize and Analyze tabs grouped tools by whether
+they produced a table, a picture or a p-value, so "is tuition different for
+public and private?" lived in four places and nothing said they were the same
+question at different levels of formality. A student had to know a test's
+name to reach it, which is the thing a first course is trying to teach.
+
+### Describe and Relate: the column types pick the method
+
+The pattern is JMP's Distribution and Fit Y by X, and Minitab's Assistant:
+the student says what they want to know, the tool reads the variable types
+and opens the right analysis, laid out as a ladder.
+
+| Y | X | Describe | Picture | Test | Model |
+|---|---|---|---|---|---|
+| number | category | group means | boxplots, bar of means | t-test or ANOVA | regression on group dummies |
+| number | number | r, slope | scatter + line, hexbin | correlation test | the fitted line |
+| category | category | row percentages | grouped bars | chi-square | pointer to Classify |
+| category | number | read as number by category, roles swapped, pointer to Classify |
+
+- **Describe > One Variable**: summary and histogram for a number, counts and
+  bar chart for a category; a second picture and a test behind sections.
+- **Relate > Two Variables**: the table above. The answer rung is one
+  sentence, one table and one chart. The test says which it ran and why
+  ("Two groups, so a two-sample t-test"), with the assumption lines from
+  0.9.1. The model rung shows the same answer as an equation, so a student
+  sees that group means and a regression on dummies are one thing.
+- **Treat as.** A 0/1 column or a small whole-number scale is read as
+  categories, and the answer says so; "Treat as" overrides it, the way a
+  modelling type does in JMP.
+- **Colour by**, the context variable. The same comparison split by a third,
+  categorical column: a two-way means table and coloured boxplots, a scatter
+  with a fitted line per group and r within each, or a nested cross-tab with
+  one bar panel per group. The sentence names the cell that stands out, and
+  the test rung says that the test itself ignores the colour.
+- **Shown code is every rung in order**, each under a heading, and runs
+  as one cell in Report Builder. Both panels carry "Add to Report", the
+  first panels to.
+- **Closed sections cost nothing**: the second picture is drawn only when
+  its section is open, following the 0.9.1 rule.
+
+### The menu
+
+| Was | Now |
+|---|---|
+| Explore > Group By, Pivot, Cross-tab | Relate > the same, beside Two Variables |
+| Explore > Simulate, and Practice | Learn > Simulate, Practice |
+| Visualize > Correlate, Timeline | Describe > the same, beside One Variable |
+| Visualize > Distribute, Relate, Compare | Advanced > Distribution Plots, Scatter, Group Plots |
+| Analyze > Means, Proportions, Correlation | Advanced > the same |
+
+Nothing was removed. Every single-purpose panel keeps every option under
+Advanced, and each carries a one-line signpost back to the panel that answers
+its question with the test attached. Extensions that named the old parents
+still land in the right section.
+
+### Tests
+
+Twenty-four library tests cover every dispatch branch, the override, the
+refusals (dates, identifiers, free text, the same column twice), and execute
+the shown code for each case. Both panels are held to the disclosure
+checklist from the start. A new browser file drives them, and the menu floor
+in the sweep names the new structure.
+
+### Also
+
+- **Add to Report on every panel.** The button lived in a component no
+  panel had wired up, so a report was assembled through Procedure recording,
+  which is off until pressed, and a student who found that out after the
+  fourth chart started over. It now sits beside Show Code everywhere, and
+  the cell's imports are read off the code it carries. Wiring it up found
+  that Report Builder's watcher for outside additions read the counter it
+  then set, so the first press from any panel spun the session with the
+  busy indicator on for good. The read is now isolated.
+- **Bin at cut points.** Add Binned Column asked only for a number of
+  equal-width bins, so "under 30 / 30 and above" split at 34.5 on bmi.
+  A Cut points box takes `30` or `18, 35, 50`; a value equal to a cut point
+  goes in the upper bin, the ends are padded so nothing falls outside, and
+  the bins are named "under 30", "30 to under 35", "50 and above".
+- **Scatter trend lines with Color By and facets.** With Color By the
+  trend line was one line through every group, which cannot show whether
+  the pattern holds within each; with facets there was none, because that
+  branch never drew it. Each group now gets its own line in its own colour,
+  each panel its own, and the shown code does the same.
+- `is_menu_visible` in `core/config.py` is imported by the app and never
+called, so the `menus` block in a course config has had no effect. The
+default keys now name the new sections; wiring them up is a separate change.
+
 ## [0.9.2] - 2026-10-01
 
 Found by building a six-chart teaching report in Report Builder and reading

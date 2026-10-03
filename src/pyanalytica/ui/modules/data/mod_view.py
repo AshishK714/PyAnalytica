@@ -166,4 +166,4 @@ def view_server(input, output, session, state: WorkbenchState, get_current_df):
                 break
 
     download_result_server("dl", get_df=filtered_df, filename="filtered_data")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="filter", description="View and filter")

@@ -129,7 +129,7 @@ class TestBinningSurvivesTheGrid:
 
     def test_t04_binned_column_is_usable_downstream(self, page: Page):
         """A column that cannot cross the wire is worse than no column."""
-        _nav_to(page, "Explore", "Summarize")
+        _nav_to(page, "Relate", "Summarize")
         _wait_stable(page, 2000)
         page.wait_for_selector(_sid("summarize", "group_cols"), state="attached", timeout=10_000)
         html = page.locator(_sid("summarize", "group_cols")).inner_html()

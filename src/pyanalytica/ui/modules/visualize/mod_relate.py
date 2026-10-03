@@ -1,4 +1,4 @@
-"""Visualize > Relate module — scatter, hexbin."""
+"""Advanced > Scatter module — scatter, hexbin."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pyanalytica.core.types import get_groupable_columns, get_numeric_columns
 from pyanalytica.visualize.relate import hexbin, scatter
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.signpost import signpost
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -31,6 +32,11 @@ def relate_ui():
             ui.input_checkbox("trend", "Show Trend Line", value=True),
             ui.input_action_button("run_btn", "Plot", class_="btn-primary w-100 mt-2"),
             width=280,
+        ),
+        signpost(
+            "A scatter plot with colour, size, style and facets. For the answer "
+            "with the correlation, its test and the fitted line attached, use "
+            "Relate > Two Variables."
         ),
         ui.card(
             ui.card_header(
@@ -113,4 +119,4 @@ def relate_server(input, output, session, state: WorkbenchState, get_current_df)
         req(fig is not None)
         return fig
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Scatter plot")

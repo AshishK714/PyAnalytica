@@ -101,8 +101,8 @@ def assistant_server(input, output, session, state: WorkbenchState, get_current_
             if not state.history:
                 return (
                     "Run an analysis first, then ask me to interpret the "
-                    "results.  Try going to Analyze or Model and running "
-                    "a test."
+                    "results.  Try Relate > Two Variables, or Model, and "
+                    "run something."
                 )
             last = state.history[-1]
             result_dict = last.details if last.details else {}
@@ -110,8 +110,8 @@ def assistant_server(input, output, session, state: WorkbenchState, get_current_
                 return (
                     f"Your last action was: {last.description}\n\n"
                     "I don't have detailed numeric results to interpret.  "
-                    "Run a statistical test (Analyze > Means, Correlation, "
-                    "etc.) and I'll explain the output."
+                    "Run a statistical test (Relate > Two Variables, or "
+                    "Advanced > Means, Correlation, etc.) and I'll explain the output."
                 )
             return interpret_result(result_dict, analysis_type=last.action)
 

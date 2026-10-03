@@ -57,7 +57,7 @@ def _upload(page: Page, csv_path: str) -> None:
 
 
 def _timeline_date_options(page: Page) -> list[str]:
-    _nav_to(page, "Visualize", "Timeline")
+    _nav_to(page, "Describe", "Timeline")
     _wait_stable(page, 2500)
     return [
         o.strip()
@@ -97,7 +97,7 @@ class TestMonthNamesAreNotOfferedAsATimeAxis:
         )
 
     def test_t04_pressing_plot_says_why_instead_of_drawing_year_one(self, page: Page):
-        _nav_to(page, "Visualize", "Timeline")
+        _nav_to(page, "Describe", "Timeline")
         _wait_stable(page, 2000)
         _click_button(page, _sid("timeline", "run_btn"))
         _wait_stable(page, 2500)

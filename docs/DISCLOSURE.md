@@ -80,7 +80,15 @@ engineer's. Current contents are as they stand today, in render order.
 | "Confusion Matrix" + `cm_table` | 1 |
 | `roc_plot` | 2 |
 
-### Explore > Simulate
+### Describe > One Variable and Relate > Two Variables
+| Now | Tier |
+|---|---|
+| `answer`, `answer_table`, `answer_plot` | 1 — the sentence, the table and the chart that answer the question |
+| "Another picture" + `picture_plot` | 2 — drawn only when the section is open |
+| "Test" + `test_text`, `test_table` | 2 |
+| "Model" + `model_text`, `model_table` | 3 — the same answer as an equation, and where to go next |
+
+### Learn > Simulate
 | Now | Tier |
 |---|---|
 | `sim_interpretation`, `chart_or_message` | 1 |
@@ -88,7 +96,7 @@ engineer's. Current contents are as they stand today, in render order.
 | "Goodness-of-Fit Tests" + `fit_table` | 3 — most people simulating a
   distribution are not asking whether the sample passes a formal test |
 
-### Analyze > Means and Proportions
+### Advanced > Means and Proportions
 | Now | Tier |
 |---|---|
 | `test_result` | 1 |

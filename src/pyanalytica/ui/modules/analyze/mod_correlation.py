@@ -1,4 +1,4 @@
-"""Analyze > Correlation module — Pearson/Spearman tests."""
+"""Advanced > Correlation module — Pearson/Spearman tests."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pyanalytica.core.types import get_numeric_columns
 from pyanalytica.analyze.correlation import correlation_test
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.signpost import signpost
 from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
@@ -27,6 +28,10 @@ def correlation_ui():
                 choices={"two-sided": "Two-sided (!=)", "less": "Less (<)", "greater": "Greater (>)"}),
             ui.input_action_button("run_btn", "Run Test", class_="btn-primary w-100 mt-2"),
             width=300,
+        ),
+        signpost(
+            "Pearson or Spearman with a chosen alternative. Relate > Two "
+            "Variables runs Pearson with the scatter plot and the fitted line."
         ),
         # Above the result: when a run fails this is what replaces it.
         status_ui("status"),
@@ -87,4 +92,4 @@ def correlation_server(input, output, session, state: WorkbenchState, get_curren
             class_=f"alert {sig_class}",
         )
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="analyze", description="Correlation test")

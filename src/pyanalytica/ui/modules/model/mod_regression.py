@@ -240,4 +240,4 @@ def regression_server(input, output, session, state: WorkbenchState, get_current
         return r.qq_plot
 
     download_result_server("dl", get_df=lambda: result().coefficients, filename="coefficients")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="model", description="Regression")

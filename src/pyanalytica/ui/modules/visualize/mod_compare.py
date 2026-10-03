@@ -1,4 +1,4 @@
-"""Visualize > Compare module — grouped box, violin, bar of means, strip."""
+"""Advanced > Group Plots module — grouped box, violin, bar of means, strip."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pyanalytica.core.types import get_groupable_columns, get_numeric_columns
 from pyanalytica.visualize.compare import bar_of_means, grouped_boxplot, grouped_violin, strip_plot
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.signpost import signpost
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -28,6 +29,11 @@ def compare_ui():
             ui.input_select("facet_row", "Facet Row (optional)", choices=[""]),
             ui.input_action_button("run_btn", "Plot", class_="btn-primary w-100 mt-2"),
             width=280,
+        ),
+        signpost(
+            "Group plots with a hue and facets: boxplot, violin, bar of means, "
+            "strip. For the group means with the t-test or ANOVA attached, use "
+            "Relate > Two Variables."
         ),
         ui.card(
             ui.card_header(
@@ -110,4 +116,4 @@ def compare_server(input, output, session, state: WorkbenchState, get_current_df
         req(fig is not None)
         return fig
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Group plot")

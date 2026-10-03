@@ -21,6 +21,7 @@ _ACTION_COLORS: dict[str, tuple[str, str]] = {
     "transform": ("#fff3e0", "#e65100"),
     "visualize": ("#e8f5e9", "#2e7d32"),
     "analyze":   ("#f3e5f5", "#6a1b9a"),
+    "ask":       ("#e0f2f1", "#00695c"),
     "model":     ("#ede7f6", "#4527a0"),
     "merge":     ("#e0f7fa", "#00695c"),
     "filter":    ("#fff9c4", "#f57f17"),
@@ -237,7 +238,14 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
     md_update_id = session.ns("_md_update")
 
     def _bump():
-        refresh.set(refresh() + 1)
+        # Read in isolation: an effect that calls this must not come to depend
+        # on ``refresh``, or setting it re-triggers the effect, which sets it
+        # again, and the session spins with the busy indicator on for good.
+        # That is exactly what the watcher below did the first time any panel
+        # pressed Add to Report.
+        with reactive.isolate():
+            current = refresh()
+        refresh.set(current + 1)
 
     # Watch for external additions (from "Add to Report" in other modules)
     @reactive.effect

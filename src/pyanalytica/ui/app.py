@@ -22,6 +22,7 @@ from pyanalytica.ui.modules.visualize import (
     mod_compare, mod_correlate, mod_distribute, mod_relate, mod_timeline,
 )
 from pyanalytica.ui.modules.analyze import mod_correlation, mod_means, mod_proportions
+from pyanalytica.ui.modules.ask import mod_one_variable, mod_two_variables
 from pyanalytica.ui.modules.model import (
     mod_classify, mod_cluster, mod_evaluate, mod_predict, mod_reduce, mod_regression,
 )
@@ -47,15 +48,18 @@ def create_app(config: CourseConfig | None = None) -> App:
 
     # Build per-section extension sub-tabs
     _section_ext_tabs: dict[str, list] = {
-        "Data": [], "Explore": [], "Visualize": [],
-        "Analyze": [], "Model": [], "Report": [],
+        "Data": [], "Describe": [], "Relate": [], "Model": [],
+        "Learn": [], "Report": [], "Advanced": [],
     }
+    # Extensions written against the 0.9 menu still land somewhere sensible.
+    _legacy_parents = {"Explore": "Relate", "Visualize": "Describe", "Analyze": "Advanced"}
     _toplevel_ext_panels: list = []
     for mod in registry.modules:
         try:
             panel = ui.nav_panel(mod.label, mod.ui_func(mod.module_id))
-            if mod.parent and mod.parent in _section_ext_tabs:
-                _section_ext_tabs[mod.parent].append(panel)
+            parent = _legacy_parents.get(mod.parent, mod.parent)
+            if parent and parent in _section_ext_tabs:
+                _section_ext_tabs[parent].append(panel)
             else:
                 _toplevel_ext_panels.append(panel)
         except Exception:
@@ -82,34 +86,28 @@ def create_app(config: CourseConfig | None = None) -> App:
                 *_section_ext_tabs["Data"],
             ),
         ),
-        # === EXPLORE ===
-        ui.nav_panel("Explore",
+        # === DESCRIBE === one thing at a time
+        # The menu is organised by the shape of the question, the way JMP's
+        # Distribution / Fit Y by X is: the column types pick the method, so
+        # a student does not have to know a test's name to reach it. The
+        # single-purpose panels that used to be Explore, Visualize and
+        # Analyze live on under Advanced.
+        ui.nav_panel("Describe",
             ui.navset_tab(
+                ui.nav_panel("One Variable", mod_one_variable.one_variable_ui("one_variable")),
+                ui.nav_panel("Correlate", mod_correlate.correlate_ui("correlate")),
+                ui.nav_panel("Timeline", mod_timeline.timeline_ui("timeline")),
+                *_section_ext_tabs["Describe"],
+            ),
+        ),
+        # === RELATE === one thing against another
+        ui.nav_panel("Relate",
+            ui.navset_tab(
+                ui.nav_panel("Two Variables", mod_two_variables.two_variables_ui("two_variables")),
                 ui.nav_panel("Group By / Summarize", mod_summarize.summarize_ui("summarize")),
                 ui.nav_panel("Pivot", mod_pivot.pivot_ui("pivot")),
                 ui.nav_panel("Cross-tab", mod_crosstab.crosstab_ui("crosstab")),
-                ui.nav_panel("Simulate", mod_simulate.simulate_ui("simulate")),
-                *_section_ext_tabs["Explore"],
-            ),
-        ),
-        # === VISUALIZE ===
-        ui.nav_panel("Visualize",
-            ui.navset_tab(
-                ui.nav_panel("Distribute", mod_distribute.distribute_ui("distribute")),
-                ui.nav_panel("Relate", mod_relate.relate_ui("relate")),
-                ui.nav_panel("Compare", mod_compare.compare_ui("compare")),
-                ui.nav_panel("Correlate", mod_correlate.correlate_ui("correlate")),
-                ui.nav_panel("Timeline", mod_timeline.timeline_ui("timeline")),
-                *_section_ext_tabs["Visualize"],
-            ),
-        ),
-        # === ANALYZE ===
-        ui.nav_panel("Analyze",
-            ui.navset_tab(
-                ui.nav_panel("Means", mod_means.means_ui("means")),
-                ui.nav_panel("Proportions", mod_proportions.proportions_ui("proportions")),
-                ui.nav_panel("Correlation", mod_correlation.correlation_ui("correlation")),
-                *_section_ext_tabs["Analyze"],
+                *_section_ext_tabs["Relate"],
             ),
         ),
         # === MODEL ===
@@ -124,8 +122,14 @@ def create_app(config: CourseConfig | None = None) -> App:
                 *_section_ext_tabs["Model"],
             ),
         ),
-        # === HOMEWORK ===
-        ui.nav_panel("Practice", mod_practice.practice_ui("practice")),
+        # === LEARN === exercises on the ideas, not analyses of the loaded data
+        ui.nav_panel("Learn",
+            ui.navset_tab(
+                ui.nav_panel("Simulate", mod_simulate.simulate_ui("simulate")),
+                ui.nav_panel("Practice", mod_practice.practice_ui("practice")),
+                *_section_ext_tabs["Learn"],
+            ),
+        ),
         ui.nav_panel("Homework", mod_homework.homework_ui("homework")),
         # === REPORT ===
         ui.nav_panel("Report",
@@ -134,6 +138,18 @@ def create_app(config: CourseConfig | None = None) -> App:
                 ui.nav_panel("Notebook", mod_notebook.notebook_ui("report")),
                 ui.nav_panel("Procedure", mod_procedure.procedure_ui("procedure")),
                 *_section_ext_tabs["Report"],
+            ),
+        ),
+        # === ADVANCED === the single-purpose panels, each with every option
+        ui.nav_panel("Advanced",
+            ui.navset_tab(
+                ui.nav_panel("Distribution Plots", mod_distribute.distribute_ui("distribute")),
+                ui.nav_panel("Scatter", mod_relate.relate_ui("relate")),
+                ui.nav_panel("Group Plots", mod_compare.compare_ui("compare")),
+                ui.nav_panel("Means", mod_means.means_ui("means")),
+                ui.nav_panel("Proportions", mod_proportions.proportions_ui("proportions")),
+                ui.nav_panel("Correlation", mod_correlation.correlation_ui("correlation")),
+                *_section_ext_tabs["Advanced"],
             ),
         ),
         # === AI ASSISTANT ===
@@ -199,6 +215,10 @@ def create_app(config: CourseConfig | None = None) -> App:
         mod_transform.transform_server("transform", state=state, get_current_df=current_df)
         mod_combine.combine_server("combine", state=state, get_current_df=current_df)
         mod_export.export_server("export", state=state, get_current_df=current_df)
+
+        # Describe and Relate: the question-shaped panels
+        mod_one_variable.one_variable_server("one_variable", state=state, get_current_df=current_df)
+        mod_two_variables.two_variables_server("two_variables", state=state, get_current_df=current_df)
 
         # Explore modules
         mod_summarize.summarize_server("summarize", state=state, get_current_df=current_df)

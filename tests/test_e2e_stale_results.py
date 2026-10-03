@@ -59,7 +59,7 @@ class TestAFailedRunClearsTheResult:
         page.locator(_sid("load", "load_btn")).click()
         _wait_stable(page, 4000)
 
-        _nav_to(page, "Analyze", "Means")
+        _nav_to(page, "Advanced", "Means")
         _wait_stable(page, 2000)
         _select(page, _sid("means", "test_type"), "two_sample")
         _wait_stable(page, 1200)

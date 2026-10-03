@@ -1,4 +1,4 @@
-"""Explore > Pivot module — pivot tables."""
+"""Relate > Pivot module — pivot tables."""
 
 from __future__ import annotations
 
@@ -105,4 +105,4 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
         return render.DataGrid(round_df(df, get_dec()), height="500px")
 
     download_result_server("dl", get_df=result, filename="pivot_table")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Pivot table")

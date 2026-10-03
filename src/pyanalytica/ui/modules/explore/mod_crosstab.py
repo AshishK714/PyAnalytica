@@ -1,4 +1,4 @@
-"""Explore > Cross-tab module — cross-tabulation with chi-square."""
+"""Relate > Cross-tab module — cross-tabulation with chi-square."""
 
 from __future__ import annotations
 
@@ -108,4 +108,4 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
         return render.DataGrid(round_df(r.table.reset_index(), get_dec()), height="400px")
 
     download_result_server("dl", get_df=lambda: result().table.reset_index(), filename="crosstab")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Cross-tabulation")

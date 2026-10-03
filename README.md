@@ -21,10 +21,11 @@
 | Category | Capabilities |
 |----------|-------------|
 | **Data** | Load CSV/Excel/bundled datasets, profile columns, view/filter, transform (rename, retype, compute, filter, fill missing, sample), combine (merge/concat), export |
-| **Explore** | Group-by summarize with percent-of-total, pivot tables, cross-tabulation with chi-squared |
-| **Visualize** | Histograms, density, box/violin, scatter, line, bar, heatmap correlation, timeline |
-| **Analyze** | Independent & paired t-tests, one-way ANOVA, proportion z-tests, chi-squared, Pearson/Spearman correlation |
+| **Describe** | One Variable: the column type picks summary + histogram or counts + bar chart, then a second picture and a test. Also correlation matrix and timeline |
+| **Relate** | Two Variables ("Y by X"): the two column types pick group means + boxplots + t-test/ANOVA, scatter + correlation + fitted line, or cross-tab + chi-square. Also group-by summarize, pivot, cross-tab |
 | **Model** | Linear & logistic regression, k-NN/SVM/tree/random-forest classification, k-means/hierarchical clustering, PCA, model evaluation, saved-model prediction |
+| **Learn** | Simulate distributions, the CLT and the LLN; practice drills |
+| **Advanced** | The single-purpose panels with every option: distribution plots, scatter, group plots, means tests, proportion tests, correlation tests |
 | **Homework** | YAML-based assignments with hash-checked answers, automatic grading, submission export |
 | **Report** | Export analyses as HTML reports, Python scripts, or Jupyter notebooks |
 | **AI** | Rule-based + optional LLM interpretation, next-step suggestions, challenge questions, natural-language data queries |
@@ -393,6 +394,7 @@ PyAnalytica/
 │   │   ├── state.py             # WorkbenchState
 │   │   └── theme.py             # Theme management
 │   ├── data/                    # Load, profile, transform, combine, export
+│   ├── ask/                     # describe_one, relate_two: the column types pick the method
 │   ├── explore/                 # Summarize, pivot, crosstab
 │   ├── visualize/               # Distribute, relate, compare, correlate, timeline
 │   ├── analyze/                 # Means, proportions, correlation
@@ -405,7 +407,7 @@ PyAnalytica/
 │       ├── app.py               # Main app entry point
 │       ├── www/style.css         # Glassmorphism CSS theme
 │       ├── components/          # Reusable UI components
-│       └── modules/             # Feature modules (data/, explore/, visualize/, ...)
+│       └── modules/             # Feature modules (data/, ask/, explore/, visualize/, ...)
 ├── tests/                       # 274 tests across 42 test files
 ├── pyproject.toml               # Build config (hatchling)
 ├── CHANGELOG.md                 # Version history

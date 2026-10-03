@@ -49,6 +49,61 @@ def test_scatter_facet_col(df):
     assert "relplot" in snippet.code
 
 
+def _dashed_lines(ax):
+    """The fitted lines: dashed Line2D artists with 100 points."""
+    return [l for l in ax.get_lines() if l.get_linestyle() == "--" and len(l.get_xdata()) == 100]
+
+
+def _run(snippet, df):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    ns = {"df": df, "np": np, "pd": pd, "plt": plt, "sns": sns}
+    exec(snippet.code.replace("plt.show()", ""), ns)
+    plt.close("all")
+
+
+def test_plain_scatter_has_one_trend_line(df):
+    fig, snippet = scatter(df, "x", "y")
+    assert len(_dashed_lines(fig.axes[0])) == 1
+    _run(snippet, df)
+
+
+def test_color_by_draws_one_trend_line_per_group(df):
+    """With Color By there used to be a single line through every group,
+    which cannot show whether the pattern holds within each."""
+    fig, snippet = scatter(df, "x", "y", color_by="cat")
+    assert len(_dashed_lines(fig.axes[0])) == 2
+    labels = [l.get_label() for l in _dashed_lines(fig.axes[0])]
+    assert any(lbl.startswith("A") for lbl in labels)
+    assert 'groupby("cat")' in snippet.code
+    _run(snippet, df)
+
+
+def test_facets_draw_a_trend_line_in_every_panel(df):
+    """The faceted branch never drew a line at all."""
+    fig, snippet = scatter(df, "x", "y", facet_col="cat")
+    panels = [ax for ax in fig.axes if ax.collections]
+    assert len(panels) == 2
+    for ax in panels:
+        assert len(_dashed_lines(ax)) == 1
+    assert "facet_data()" in snippet.code
+    _run(snippet, df)
+
+
+def test_facets_with_color_by_draw_a_line_per_group_per_panel(df):
+    df = df.assign(grp=np.random.choice(["p", "q"], len(df)))
+    fig, snippet = scatter(df, "x", "y", color_by="cat", facet_col="grp")
+    panels = [ax for ax in fig.axes if ax.collections]
+    for ax in panels:
+        assert len(_dashed_lines(ax)) == 2
+    _run(snippet, df)
+
+
+def test_trend_off_draws_no_lines_anywhere(df):
+    fig, _ = scatter(df, "x", "y", color_by="cat", facet_col="cat", trend_line=False)
+    assert all(not _dashed_lines(ax) for ax in fig.axes)
+
+
 def test_hexbin(df):
     fig, snippet = hexbin(df, "x", "y")
     assert fig is not None

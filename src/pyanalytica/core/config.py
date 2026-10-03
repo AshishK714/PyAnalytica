@@ -23,13 +23,14 @@ class CourseConfig:
     bundled_datasets: list[str] = field(default_factory=lambda: ["diamonds", "tips", "titanic"])
     menus: dict[str, Any] = field(default_factory=lambda: {
         "data": True,
-        "explore": True,
-        "visualize": True,
-        "analyze": True,
+        "describe": True,
+        "relate": True,
         "model": True,
+        "learn": True,
         "homework": True,
-        "ai": False,
         "report": True,
+        "advanced": True,
+        "ai": False,
     })
     prompts_enabled: bool = False
     custom_prompts: list[dict] = field(default_factory=list)

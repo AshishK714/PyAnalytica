@@ -1,4 +1,4 @@
-"""Visualize > Correlate module — correlation matrix, pair plot."""
+"""Describe > Correlate module — correlation matrix, pair plot."""
 
 from __future__ import annotations
 
@@ -128,4 +128,4 @@ def correlate_server(input, output, session, state: WorkbenchState, get_current_
             class_="alert alert-info",
         )
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Correlation matrix")

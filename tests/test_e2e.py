@@ -140,7 +140,7 @@ def _nav_to(page: Page, *tab_labels: str, timeout: float = 10_000) -> None:
 
     Usage:
         _nav_to(page, "Data", "Load")        # top-nav "Data", sub-tab "Load"
-        _nav_to(page, "Explore", "Pivot")     # top-nav "Explore", sub-tab "Pivot"
+        _nav_to(page, "Relate", "Pivot")     # top-nav "Relate", sub-tab "Pivot"
     """
     for label in tab_labels:
         link = page.locator(f"a.nav-link:has-text('{label}')")
@@ -667,7 +667,7 @@ class TestExploreSummarize:
 
     def test_t19_summarize_select_and_run(self, page: Page):
         """Select group and value columns, run summarize, verify result table."""
-        _nav_to(page, "Explore", "Summarize")
+        _nav_to(page, "Relate", "Summarize")
         _wait_stable(page, 2000)
 
         # Wait for column selectors to populate
@@ -705,7 +705,7 @@ class TestExplorePivot:
     """Tests for the Explore > Pivot module."""
     def test_t20_pivot_select_and_run(self, page: Page):
         """Select row, column, value variables, create pivot, verify table."""
-        _nav_to(page, "Explore", "Pivot")
+        _nav_to(page, "Relate", "Pivot")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -743,7 +743,7 @@ class TestExploreCrosstab:
     """Tests for the Explore > Cross-tab module."""
     def test_t21_crosstab_chi_square(self, page: Page):
         """Select variables, run cross-tab, verify chi-square result + table."""
-        _nav_to(page, "Explore", "Cross-tab")
+        _nav_to(page, "Relate", "Cross-tab")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -784,7 +784,7 @@ class TestVisualizeDistribute:
     """Tests for the Visualize > Distribute module."""
     def test_t22_histogram(self, page: Page):
         """Select a column, run, verify chart appears."""
-        _nav_to(page, "Visualize", "Distribute")
+        _nav_to(page, "Advanced", "Distribution Plots")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -822,7 +822,7 @@ class TestVisualizeRelate:
     """Tests for the Visualize > Relate module."""
     def test_t23_scatter_plot(self, page: Page):
         """Select x and y, run, verify scatter plot appears."""
-        _nav_to(page, "Visualize", "Relate")
+        _nav_to(page, "Advanced", "Scatter")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -858,7 +858,7 @@ class TestVisualizeCompare:
     """Tests for the Visualize > Compare module."""
     def test_t24_grouped_boxplot(self, page: Page):
         """Select category and numeric, run, verify grouped plot appears."""
-        _nav_to(page, "Visualize", "Compare")
+        _nav_to(page, "Advanced", "Group Plots")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -894,7 +894,7 @@ class TestVisualizeCorrelate:
     """Tests for the Visualize > Correlate module."""
     def test_t25_correlation_matrix(self, page: Page):
         """Select numeric columns, run, verify correlation matrix appears."""
-        _nav_to(page, "Visualize", "Correlate")
+        _nav_to(page, "Describe", "Correlate")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -928,7 +928,7 @@ class TestAnalyzeMeans:
     """Tests for the Analyze > Means module."""
     def test_t26_two_sample_ttest(self, page: Page):
         """Run a two-sample t-test and verify result, group stats, no errors."""
-        _nav_to(page, "Analyze", "Means")
+        _nav_to(page, "Advanced", "Means")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -1000,7 +1000,7 @@ class TestAnalyzeProportions:
     """Tests for the Analyze > Proportions module."""
     def test_t28_chi_square_test(self, page: Page):
         """Run proportions test and verify result + observed/expected tables."""
-        _nav_to(page, "Analyze", "Proportions")
+        _nav_to(page, "Advanced", "Proportions")
         _wait_stable(page, 2000)
 
         # row_var/col_var only exist for the independence test; the module
@@ -1049,7 +1049,7 @@ class TestAnalyzeCorrelation:
     """Tests for the Analyze > Correlation module."""
     def test_t29_correlation_test(self, page: Page):
         """Run correlation test and verify result with r, p, CI."""
-        _nav_to(page, "Analyze", "Correlation")
+        _nav_to(page, "Advanced", "Correlation")
         _wait_stable(page, 2000)
 
         page.wait_for_selector(
@@ -1279,11 +1279,15 @@ class TestCrossCutting:
         """
         expected_tabs = {
             "Data": {"Load", "Profile", "View", "Transform", "Combine", "Export"},
-            "Explore": {"Group By / Summarize", "Pivot", "Cross-tab", "Simulate"},
-            "Visualize": {"Distribute", "Relate", "Compare", "Correlate", "Timeline"},
-            "Analyze": {"Means", "Proportions", "Correlation"},
+            "Describe": {"One Variable", "Correlate", "Timeline"},
+            "Relate": {"Two Variables", "Group By / Summarize", "Pivot", "Cross-tab"},
             "Model": {"Regression", "Classify", "Evaluate", "Predict", "Cluster", "Reduce"},
+            "Learn": {"Simulate", "Practice"},
             "Report": {"Report Builder", "Notebook", "Procedure"},
+            "Advanced": {
+                "Distribution Plots", "Scatter", "Group Plots",
+                "Means", "Proportions", "Correlation",
+            },
         }
 
         discovered = _discover_nav(page)

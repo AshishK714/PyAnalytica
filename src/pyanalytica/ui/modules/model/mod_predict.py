@@ -174,4 +174,4 @@ def predict_server(input, output, session, state: WorkbenchState, get_current_df
         return render.DataGrid(round_df(df.head(500), get_dec()), height="500px")
 
     download_result_server("dl", get_df=pred_df, filename="predictions")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="model", description="Prediction")

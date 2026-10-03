@@ -3,7 +3,7 @@ title: "Titanic: missing data and group differences"
 dataset: titanic
 description: >
   Practice at spotting missing values and comparing groups. Load titanic from
-  Data > Load, then work through Profile and Explore > Group By / Summarize.
+  Data > Load, then work through Profile and Relate > Group By / Summarize.
 
 questions:
   - id: rows

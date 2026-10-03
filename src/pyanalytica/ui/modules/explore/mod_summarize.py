@@ -1,4 +1,4 @@
-"""Explore > Summarize module — group-by aggregation."""
+"""Relate > Summarize module — group-by aggregation."""
 
 from __future__ import annotations
 
@@ -80,4 +80,4 @@ def summarize_server(input, output, session, state: WorkbenchState, get_current_
         return render.DataGrid(round_df(df, get_dec()), height="500px")
 
     download_result_server("dl", get_df=result, filename="summary")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Group summary")

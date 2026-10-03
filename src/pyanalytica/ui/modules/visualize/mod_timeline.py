@@ -1,4 +1,4 @@
-"""Visualize > Timeline module — time series charts."""
+"""Describe > Timeline module — time series charts."""
 
 from __future__ import annotations
 
@@ -148,4 +148,4 @@ def timeline_server(input, output, session, state: WorkbenchState, get_current_d
         req(fig is not None)
         return fig
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Timeline")

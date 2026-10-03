@@ -1,4 +1,4 @@
-"""Visualize > Distribute module — histogram, box, violin, bar."""
+"""Advanced > Distribution Plots module — histogram, box, violin, bar."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from pyanalytica.core.types import ColumnType, classify_column, get_groupable_co
 from pyanalytica.visualize.distribute import bar_chart, boxplot, histogram, violin
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.signpost import signpost
 from pyanalytica.ui.components.selects import (
     update_choices,
     update_multi_choices,
@@ -29,6 +30,11 @@ def distribute_ui():
             ui.input_select("facet_row", "Facet Row (optional)", choices=[""]),
             ui.input_action_button("run_btn", "Plot", class_="btn-primary w-100 mt-2"),
             width=280,
+        ),
+        signpost(
+            "One chart of one column, with full control over bins, chart type and "
+            "facets. For the quickest answer about a column, with its summary and "
+            "a test, use Describe > One Variable."
         ),
         ui.card(
             ui.card_header(
@@ -154,4 +160,4 @@ def distribute_server(input, output, session, state: WorkbenchState, get_current
         req(fig is not None)
         return fig
 
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="visualize", description="Distribution plot")

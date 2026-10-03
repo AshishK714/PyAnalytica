@@ -168,4 +168,4 @@ def reduce_server(input, output, session, state: WorkbenchState, get_current_df)
         get_df=lambda: result().loadings.reset_index(),
         filename="pca_loadings",
     )
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="model", description="PCA")

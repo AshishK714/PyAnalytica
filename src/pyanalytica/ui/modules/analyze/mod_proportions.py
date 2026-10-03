@@ -1,4 +1,4 @@
-"""Analyze > Proportions module — proportion z-tests and chi-square tests."""
+"""Advanced > Proportions module — proportion z-tests and chi-square tests."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from pyanalytica.ui.components.disclosure import PLOT_HEIGHT, diagnostics, suppo
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
 from pyanalytica.ui.components.download_result import download_result_server, download_result_ui
 from pyanalytica.ui.components.requirements import NO_DATASET, require
+from pyanalytica.ui.components.signpost import signpost
 from pyanalytica.ui.components.status import status_server, status_ui
 from pyanalytica.ui.components.selects import (
     update_choices,
@@ -39,6 +40,12 @@ def proportions_ui():
                                      "greater": "Greater than"}),
             ui.input_action_button("run_btn", "Run Test", class_="btn-primary w-100 mt-2"),
             width=300,
+        ),
+        signpost(
+            "Every test on a proportion: one-sample, two-sample, independence "
+            "and goodness of fit, with a chosen alternative. Relate > Two "
+            "Variables runs the chi-square for two categories and shows the "
+            "percentages alongside."
         ),
         # Above the result: when a run fails this is what replaces it.
         status_ui("status"),
@@ -302,4 +309,4 @@ def proportions_server(input, output, session, state: WorkbenchState, get_curren
             return r.table
 
     download_result_server("dl", get_df=_get_dl_df, filename="proportions")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="analyze", description="Proportions test")

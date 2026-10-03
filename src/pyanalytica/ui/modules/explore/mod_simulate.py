@@ -1,4 +1,4 @@
-"""Explore > Simulate module — distributions, CLT, and LLN."""
+"""Learn > Simulate module — distributions, CLT, and LLN."""
 
 from __future__ import annotations
 
@@ -276,4 +276,4 @@ def simulate_server(input, output, session, state: WorkbenchState):
         return _last_summary()
 
     download_result_server("dl", get_df=_get_summary, filename="simulation")
-    code_panel_server("code", get_code=last_code)
+    code_panel_server("code", get_code=last_code, state=state, action="explore", description="Simulation")
