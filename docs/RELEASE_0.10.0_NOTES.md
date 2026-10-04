@@ -15,6 +15,11 @@
 > also hides code in the editor; report tables read exactly as the screen
 > does; One Variable labels the median; the overlaid-histogram pointer is on
 > the Two Variables answer.
+>
+> **0.10.3 (3 October)** finishes that run's list: report headings are
+> editable text boxes; colour legends sit beside the plot; two groups get
+> blue and orange; guided-panel tables use readable column names ("mean
+> charges", "smoker = yes (% of row)").
 
 Written 2 October 2026 for the next session, which will work through a
 nine-question visualization assignment in the app and report every point of

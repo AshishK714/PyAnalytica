@@ -129,6 +129,21 @@ def _number_by_category(
     # the group that costs most may be a group *within* a group.
     groups = [cat, color] if color else [cat]
     table, table_code = group_summarize(df, groups, [num], ["count", "mean", "median", "std"])
+    # Column names a reader can read. groupby names them charges_count,
+    # charges_mean ...; that is right for the Group By panel, which teaches
+    # the pandas call, and wrong in a report for a reader. Renamed the same
+    # way on screen and in the code, so the two stay identical.
+    names = {
+        f"{num}_count": "n",
+        f"{num}_mean": f"mean {num}",
+        f"{num}_median": f"median {num}",
+        f"{num}_std": f"std dev {num}",
+    }
+    table = table.rename(columns=names)
+    table_code = CodeSnippet(
+        code=table_code.code + f"\nresult = result.rename(columns={names!r})",
+        imports=table_code.imports,
+    )
     means = df.groupby(groups, observed=True)[num].mean().dropna()
     hi, lo = means.idxmax(), means.idxmin()
     where = " / ".join(groups)
@@ -439,12 +454,18 @@ def _category_by_category(
         f"The share of {y} = {outcome} ranges from {col.min():.1f}% ({where} = {_label(col.idxmin())}) "
         f"to {col.max():.1f}% ({where} = {_label(col.idxmax())}) across the {where} groups."
     )
-    table = pct.reset_index()
+    # Each outcome column names its variable and what the number is: "no /
+    # yes" alone did not say it meant smoker, nor that rows add to 100.
+    def _label_outcome(level) -> str:
+        return f"{y} = {level} (% of row)"
+
+    table = pct.rename(columns=_label_outcome).reset_index()
     table.columns = [str(c) for c in table.columns]
     rows_expr = f'[df["{color}"], df["{x}"]]' if color else f'df["{x}"]'
     table_code = CodeSnippet(
         code=(
-            f'result = (pd.crosstab({rows_expr}, df["{y}"], normalize="index") * 100).round(1)'
+            f'result = (pd.crosstab({rows_expr}, df["{y}"], normalize="index") * 100).round(1)\n'
+            f'result = result.rename(columns=lambda level: f"{y} = {{level}} (% of row)")'
         ),
         imports=["import pandas as pd"],
     )

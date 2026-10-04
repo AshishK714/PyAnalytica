@@ -116,6 +116,19 @@ def test_print_layout_lets_cards_break_and_keeps_charts_whole(df):
     assert "@media print" in html and "break-inside: avoid" in html
 
 
+def test_a_heading_can_be_rewritten_and_the_export_uses_it(df):
+    rb = _report(df)
+    cell = [c for c in rb.get_cells() if c.description == "Mean v by g"][0]
+    rb.update_description(cell.id, "  Average value per group  ")
+    assert cell.description == "Average value per group"
+    rb.update_description(cell.id, "   ")  # blank is ignored, not an unnamed step
+    assert cell.description == "Average value per group"
+    html = export_report_html(rb, show_code=False)
+    assert "<h4>Average value per group</h4>" in html
+    assert "Mean v by g" not in html
+    assert '"description": "Average value per group"' in rb.export_json()
+
+
 def test_move_to_a_position_in_one_step():
     rb = ReportBuilder()
     ids = [rb.add_code_cell(description=str(i), code="x = 1").id for i in range(6)]

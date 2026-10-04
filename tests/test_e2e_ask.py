@@ -45,6 +45,13 @@ def _close_section_of(page, module: str, section_id: str) -> None:
         time.sleep(1.5)
 
 
+def _headings(page) -> list[str]:
+    """Report Builder's code-cell headings, which live in text boxes."""
+    return page.eval_on_selector_all(
+        "#report_builder-cell_editor input[type=text]", "els => els.map(e => e.value)"
+    )
+
+
 def _answer(page, module: str) -> str:
     return page.locator(_sid(module, "answer")).inner_text()
 
@@ -163,22 +170,32 @@ class TestReportFromTheGuidedPanels:
         _wait_stable(page, 2500)
         editor = page.locator(_sid("report_builder", "cell_editor"))
         assert "2 cells" in editor.inner_text()
-        assert "tip by day, test" in editor.inner_text()
+        assert _headings(page) == ["Relate: tip by day", "Relate: tip by day, test"]
 
         # Move the second cell to position 1 by typing the position.
         boxes = editor.locator("input[type=number]")
         boxes.nth(1).fill("1")
         boxes.nth(1).dispatch_event("change")
         _wait_stable(page, 2500)
-        first_card = page.locator(_sid("report_builder", "cell_editor")).inner_text()
-        assert first_card.index("tip by day, test") < first_card.index("Relate: tip by day\n"), first_card
+        assert _headings(page) == ["Relate: tip by day, test", "Relate: tip by day"]
+
+        # A heading is the author's to rewrite, and the rewrite sticks.
+        first = page.locator(_sid("report_builder", "cell_editor") + " input[type=text]").first
+        first.fill("Is the gap between days chance?")
+        first.dispatch_event("change")
+        _wait_stable(page, 1500)
+        boxes = page.locator(_sid("report_builder", "cell_editor") + " input[type=number]")
+        boxes.nth(0).fill("2")
+        boxes.nth(0).dispatch_event("change")  # forces a redraw from the server's copy
+        _wait_stable(page, 2500)
+        assert _headings(page) == ["Relate: tip by day", "Is the gap between days chance?"]
 
         _click_button(page, _sid("report_builder", "run_all"))
         _wait_stable(page, 5000)
         status = page.locator(_sid("report_builder", "status-panel_status")).inner_text()
         assert "2 OK" in status, status
         output = page.locator(_sid("report_builder", "cell_editor")).inner_text()
-        assert "tip_mean" in output and "coefficient" not in output
+        assert "mean tip" in output and "coefficient" not in output
 
         # Show Code off hides the code in the editor, not only in the export.
         assert "import seaborn as sns" in output
@@ -186,7 +203,7 @@ class TestReportFromTheGuidedPanels:
         _wait_stable(page, 2000)
         output = page.locator(_sid("report_builder", "cell_editor")).inner_text()
         assert "import seaborn as sns" not in output, "code still shown with Show Code off"
-        assert "tip_mean" in output, "the output went with the code"
+        assert "mean tip" in output, "the output went with the code"
         page.locator(_sid("report_builder", "show_code")).check()
         _wait_stable(page, 1500)
         _assert_no_shiny_errors(page)

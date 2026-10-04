@@ -60,7 +60,7 @@ def test_the_answer_cell_shows_the_group_table_not_the_coefficients(df):
     r = relate_two(df, "charges", "smoker")
     out = _run_cells(r.report_cells({"model"}), df)
     answer_html, model_html = out[0].output_html, out[1].output_html
-    assert "charges_mean" in answer_html
+    assert "mean charges" in answer_html
     assert "coefficient" not in answer_html
     assert "coefficient" in model_html
 

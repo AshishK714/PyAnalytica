@@ -230,6 +230,17 @@ class ReportBuilder:
                 c.enabled = not c.enabled
                 break
 
+    def update_description(self, cell_id: str, text: str) -> None:
+        """Rename a code cell. The description is the heading the reader view
+        prints, so it has to be the author's to write, not only the panel's."""
+        text = (text or "").strip()
+        if not text:
+            return  # an empty heading would leave the step unnamed in the editor
+        for c in self._cells:
+            if c.id == cell_id and c.cell_type == CellType.CODE:
+                c.description = text
+                break
+
     def update_markdown(self, cell_id: str, text: str) -> None:
         for c in self._cells:
             if c.id == cell_id and c.cell_type == CellType.MARKDOWN:

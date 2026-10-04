@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.visualize._legend import AXES_CODE, beside_axes, beside_grid
 
 Figure = matplotlib.figure.Figure
 
@@ -50,6 +51,7 @@ def histogram(
             kind="hist", **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"Distribution of {col}")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -71,6 +73,8 @@ def histogram(
             ax.legend()
 
         title = f"Distribution of {col}" + (f" by {group_by}" if group_by else "")
+        if group_by:
+            beside_axes(ax)
         ax.set_title(title)
         ax.set_xlabel(col)
         ax.set_ylabel("Count")
@@ -94,9 +98,11 @@ def histogram(
                 f'ax.axvline(median_val, color="green", linestyle="-.", label=f"Median: {{median_val:.2f}}")\n'
                 f'ax.legend()\n'
             )
+        legend_code = AXES_CODE if group_by else ""
         code = (
             f'fig, ax = plt.subplots(figsize=(8, 5))\n'
             f'{plot_line}'
+            f'{legend_code}'
             f'{ref_code}'
             f'ax.set_title("{title}")\n'
             f'ax.set_xlabel("{col}")\n'
@@ -135,6 +141,7 @@ def boxplot(
             **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"Box Plot of {col}")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -191,6 +198,7 @@ def violin(
             **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"Violin Plot of {col}")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -254,11 +262,14 @@ def _bar_chart_split(
     )
     # The title names every variable on the chart. "Count of sex" over bars
     # split by smoker described a different chart from the one drawn.
-    split = f" by {group_by}" if group_by else ""
+    # ", split by" as on every other coloured chart: "Count of sex by smoker"
+    # read as if sex were counted per smoker.
+    split = f", split by {group_by}" if group_by else ""
     if facets:
         split += " in panels of " + " and ".join(facets.values())
     heading = f"Percentage of all rows, {col}{split}" if pct else f"Count of {col}{split}"
     g.figure.suptitle(heading)
+    beside_grid(g)
     g.figure.set_layout_engine("tight")
 
     hue_str = f', hue="{group_by}"' if group_by else ""

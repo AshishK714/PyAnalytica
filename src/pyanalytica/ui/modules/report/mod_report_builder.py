@@ -93,7 +93,10 @@ def _insert_button_html(after_id: str, cmd_id: str) -> str:
     )
 
 
-def _cell_card_html(c, cmd_id: str, md_update_id: str, total: int, show_code: bool = True) -> str:
+def _cell_card_html(
+    c, cmd_id: str, md_update_id: str, total: int, show_code: bool = True,
+    desc_update_id: str = "",
+) -> str:
     enabled = c.enabled
     opacity = "1" if enabled else "0.5"
     border_color = "#4CAF50" if enabled else "#bdbdbd"
@@ -159,15 +162,34 @@ def _cell_card_html(c, cmd_id: str, md_update_id: str, total: int, show_code: bo
         bg, fg = _ACTION_COLORS.get(c.action, _DEFAULT_COLOR)
         type_badge = _badge_html("CODE", "#e3f2fd", "#1565c0")
         action_badge = _badge_html(c.action, bg, fg)
-        desc_style = "font-size:0.9rem;margin:4px 0 2px 0;"
+        desc_style = (
+            "font-size:0.9rem;font-weight:600;margin:4px 0 2px 0;width:100%;"
+            "border:1px solid transparent;border-radius:3px;padding:2px 4px;background:transparent;"
+        )
         if not enabled:
             desc_style += "text-decoration:line-through;color:#999;"
+        # The heading is the cell's description, and the reader view prints
+        # it over the output, so it is editable: a panel's name for a step
+        # ("Relate: charges by sex, split by smoker, another picture") is not
+        # the caption a report's reader should see.
+        js_desc = (
+            f"Shiny.setInputValue('{desc_update_id}', "
+            f"JSON.stringify({{id:'{c.id}', description:this.value}}))"
+        )
+        heading = (
+            f'<input type="text" value="{_esc(c.description)}" '
+            f'title="Heading shown in the report. Click to edit." '
+            f'aria-label="Heading for cell {c.order}" '
+            f'onchange="{js_desc}" style="{desc_style}" '
+            f'onfocus="this.style.borderColor=\'#90caf9\'" '
+            f'onblur="this.style.borderColor=\'transparent\'">'
+        )
         # The switch acts here too. It used to change only Preview and the
         # download, so turning it off left every cell's code on screen and
         # the switch looked broken.
         content = (
             f'{action_badge}'
-            f'<p style="{desc_style}">{_esc(c.description)}</p>'
+            f'{heading}'
             f'{_code_block_html(c.code, c.imports) if show_code else ""}'
         )
         # Append execution output if present
@@ -253,6 +275,7 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
 
     cell_cmd_id = session.ns("_cell_cmd")
     md_update_id = session.ns("_md_update")
+    desc_update_id = session.ns("_desc_update")
 
     def _bump():
         # Read in isolation: an effect that calls this must not come to depend
@@ -385,6 +408,21 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
         except (json.JSONDecodeError, KeyError):
             pass
 
+    # --- Heading update ---
+    # No redraw: the text box already shows what was typed, and redrawing
+    # every card on each edit would take focus away from the next one.
+    @reactive.effect
+    @reactive.event(input._desc_update)
+    def _handle_desc_update():
+        raw = input._desc_update()
+        if not raw:
+            return
+        try:
+            data = json.loads(raw)
+            builder.update_description(data["id"], data["description"])
+        except (json.JSONDecodeError, KeyError):
+            pass
+
     # --- Preview in modal ---
     @reactive.effect
     @reactive.event(input.preview_btn)
@@ -454,7 +492,7 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
         parts: list[ui.TagChild] = []
         parts.append(ui.HTML(_insert_button_html("__top__", cell_cmd_id)))
         for c in cells:
-            parts.append(ui.HTML(_cell_card_html(c, cell_cmd_id, md_update_id, total, show)))
+            parts.append(ui.HTML(_cell_card_html(c, cell_cmd_id, md_update_id, total, show, desc_update_id)))
             parts.append(ui.HTML(_insert_button_html(c.id, cell_cmd_id)))
 
         return ui.tags.div(

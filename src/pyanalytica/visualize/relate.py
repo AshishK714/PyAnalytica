@@ -11,6 +11,7 @@ import seaborn as sns
 from scipy import stats
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.visualize._legend import AXES_CODE, beside_axes, beside_grid
 
 Figure = matplotlib.figure.Figure
 
@@ -141,6 +142,7 @@ def scatter(
                 if ax.get_lines():
                     ax.legend(fontsize="small")
         g.figure.suptitle(title)
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -188,8 +190,16 @@ def scatter(
             _draw_fit(ax, df, x, y, color="red", label=None)
             code_lines += _fit_code("df", x, y, "", '"red"', 'f"R² = {r2:.3f}"')
         if fit_ok:
-            ax.legend()
-            code_lines.append("ax.legend()")
+            # Rebuilding the legend to add the fitted lines dropped its title,
+            # so a coloured scatter's legend no longer said what the colours were.
+            if hue:
+                ax.legend(title=hue)
+                code_lines.append(f'ax.legend(title="{hue}")')
+            else:
+                ax.legend()
+                code_lines.append("ax.legend()")
+        if hue and beside_axes(ax):
+            code_lines.append(AXES_CODE.rstrip("\n"))
 
         ax.set_title(title)
         fig.set_layout_engine("tight", pad=1.5)

@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.3] - 2026-10-03
+
+The rest of the second student-style run's findings. None made a report
+wrong; each made one harder to read or harder to make one's own.
+
+- **Report headings are editable.** A cell's heading is the caption the
+  reader view prints, and it was the panel's name for the step ("Relate:
+  charges by sex, split by smoker, another picture") with no way to change
+  it. It is now a text box on the cell; an edit is kept in the report, its
+  export and its saved JSON. A blank edit is ignored rather than leaving the
+  step unnamed.
+- **Colour legends sit beside the plot, never on it.** Axes-level charts let
+  matplotlib pick a "best" corner, which with bars or boxes everywhere was
+  still on one. Figure-level charts (grouped count bars, faceted plots) were
+  worse on screen than in the report: the layout engine the panels use to
+  keep titles on the canvas ignores figure legends, so the bars ran under
+  it and a swatch vanished against a bar of its own colour. Every colour
+  legend is now an axes legend outside the top-right plot, which the layout
+  engine makes room for; shown code for axes-level charts says
+  `sns.move_legend(...)`. A coloured scatter's legend keeps its title when
+  the fitted lines are added to it.
+- **Two groups get blue and orange.** The default palette (IBM's
+  colour-blind-safe set) began blue then violet, which blended where bars
+  overlapped. Same colours, reordered so the first two are its most distinct
+  pair.
+- **Readable column names in the guided panels' tables:** "n", "mean
+  charges", "median charges", "std dev charges" for a group comparison;
+  "smoker = yes (% of row)" for a cross-tab, which says both what the column
+  is and that rows add to 100. Same names on screen and in the shown code.
+  Group By / Summarize keeps pandas' `charges_mean`, since that panel teaches
+  the pandas call.
+- Split count charts read "Count of sex, split by smoker", like every other
+  coloured chart, not "Count of sex by smoker".
+
+New tests measure every coloured chart at the screen's shapes and fail if a
+legend covers a plotting area or runs off the canvas.
+
 ## [0.10.2] - 2026-10-03
 
 A second student-style run, on 0.10.1, completed the assignment with no

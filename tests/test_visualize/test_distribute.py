@@ -62,8 +62,8 @@ def test_bar_chart_code_labels_the_value_axis(num_df):
 def test_split_bar_title_names_the_split(num_df):
     df = num_df.assign(g=["x", "y", "y", "x"] * 25)
     fig, snippet = bar_chart(df, "cat", group_by="g")
-    assert fig._suptitle.get_text() == "Count of cat by g"
-    assert 'suptitle("Count of cat by g")' in snippet.code
+    assert fig._suptitle.get_text() == "Count of cat, split by g"
+    assert 'suptitle("Count of cat, split by g")' in snippet.code
 
 
 def test_grouped_histogram_title_names_the_group(num_df):

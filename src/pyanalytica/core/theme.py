@@ -24,11 +24,16 @@ class Theme:
             self.categorical_palette = self.palette
 
 
-# IBM Design Library colorblind-safe palette
+# IBM Design Library colorblind-safe palette, ordered for contrast. Most
+# coloured charts in a course split by two groups (smoker or not, male or
+# female), and in the library's own order the first two are blue and
+# violet, which blend where bars overlap. Blue then orange is the most
+# distinct pair in the set, for colour-blind readers too; magenta and
+# yellow follow before the violet.
 DEFAULT_THEME = Theme(
     name="default",
     palette=[
-        "#648FFF", "#785EF0", "#DC267F", "#FE6100", "#FFB000",
+        "#648FFF", "#FE6100", "#DC267F", "#FFB000", "#785EF0",
         "#009E73", "#56B4E9", "#E69F00", "#0072B2", "#D55E00",
     ],
     background="#ffffff",

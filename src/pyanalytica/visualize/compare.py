@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 from pyanalytica.core.codegen import CodeSnippet
+from pyanalytica.visualize._legend import AXES_CODE, beside_axes, beside_grid
 
 Figure = matplotlib.figure.Figure
 
@@ -63,6 +64,7 @@ def grouped_boxplot(
         )
         g.figure.suptitle(title)
         g.set_xticklabels(rotation=45, ha="right")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -77,6 +79,8 @@ def grouped_boxplot(
     else:
         fig, ax = plt.subplots(figsize=(10, 6))
         sns.boxplot(data=df, x=x_cat, y=y_num, order=order, ax=ax, **hue_kwarg)
+        if hue:
+            beside_axes(ax)
         ax.set_title(title)
         plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
@@ -85,6 +89,7 @@ def grouped_boxplot(
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
             f'{order_code}'
             f'sns.boxplot(data=df, x="{x_cat}", y="{y_num}", order=order{hue_str}, ax=ax)\n'
+            f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{title}")\n'
             f'plt.xticks(rotation=45, ha="right")\n'
             f'plt.tight_layout()\n'
@@ -124,6 +129,7 @@ def grouped_violin(
         )
         g.figure.suptitle(f"{y_num} by {x_cat}")
         g.set_xticklabels(rotation=45, ha="right")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -136,6 +142,8 @@ def grouped_violin(
     else:
         fig, ax = plt.subplots(figsize=(10, 6))
         sns.violinplot(data=df, x=x_cat, y=y_num, order=order, ax=ax, **hue_kwarg)
+        if hue:
+            beside_axes(ax)
         ax.set_title(f"{y_num} by {x_cat}")
         plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
@@ -143,6 +151,7 @@ def grouped_violin(
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
             f'sns.violinplot(data=df, x="{x_cat}", y="{y_num}"{hue_str}, ax=ax)\n'
+            f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{y_num} by {x_cat}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
@@ -194,6 +203,7 @@ def bar_of_means(
         )
         g.figure.suptitle(title)
         g.set_xticklabels(rotation=45, ha="right")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -210,6 +220,8 @@ def bar_of_means(
             errorbar=("ci", 95) if error_bars else None,
             ax=ax, **hue_kwarg,
         )
+        if hue:
+            beside_axes(ax)
         ax.set_title(title)
         plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
@@ -217,6 +229,7 @@ def bar_of_means(
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
             f'sns.barplot(data=df, x="{x_cat}", y="{y_num}"{err_str}{hue_str}, ax=ax)\n'
+            f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{title}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
@@ -253,6 +266,7 @@ def strip_plot(
         )
         g.figure.suptitle(f"{y_num} by {x_cat}")
         g.set_xticklabels(rotation=45, ha="right")
+        beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
 
@@ -266,6 +280,8 @@ def strip_plot(
     else:
         fig, ax = plt.subplots(figsize=(10, 6))
         sns.stripplot(data=df, x=x_cat, y=y_num, alpha=0.5, jitter=True, ax=ax, **hue_kwarg)
+        if hue:
+            beside_axes(ax)
         ax.set_title(f"{y_num} by {x_cat}")
         plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
@@ -273,6 +289,7 @@ def strip_plot(
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
             f'sns.stripplot(data=df, x="{x_cat}", y="{y_num}", alpha=0.5, jitter=True{hue_str}, ax=ax)\n'
+            f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{y_num} by {x_cat}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
