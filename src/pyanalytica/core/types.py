@@ -56,21 +56,29 @@ def classify_column(series: pd.Series) -> ColumnType:
     return ColumnType.TEXT
 
 
-_classify_cache: dict[int, dict[str, ColumnType]] = {}
+_classify_cache: dict[int, tuple[pd.DataFrame, dict[str, ColumnType]]] = {}
 
 
 def classify_columns(df: pd.DataFrame) -> dict[str, ColumnType]:
     """Classify all columns in a DataFrame.
 
-    Uses a single-entry id(df)-keyed cache. Safe because DataFrames
-    are never mutated in place (always .copy() then replace).
+    A single-entry cache keyed by ``id(df)``. An id is unique only among
+    live objects: once a frame is freed, the next frame can be given the
+    same id, and the cache used to hand it the dead frame's column types.
+    CI caught it at random (titanic was offered a column "b" from another
+    frame); in the app it could fill a dropdown with another dataset's
+    columns after a transform replaced a frame. The entry now holds the
+    frame itself and is used only for that same frame, with the same
+    columns. Holding it keeps at most one extra frame alive.
     """
-    df_id = id(df)
-    if df_id in _classify_cache:
-        return _classify_cache[df_id]
+    entry = _classify_cache.get(id(df))
+    if entry is not None:
+        cached_df, cached = entry
+        if cached_df is df and list(cached) == list(df.columns):
+            return cached
     result = {col: classify_column(df[col]) for col in df.columns}
     _classify_cache.clear()
-    _classify_cache[df_id] = result
+    _classify_cache[id(df)] = (df, result)
     return result
 
 

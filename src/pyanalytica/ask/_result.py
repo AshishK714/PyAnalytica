@@ -76,7 +76,7 @@ class AskResult:
         cells: list[tuple[str, CodeSnippet]] = []
         for key, rung, label in (
             ("answer", self.answer, ""),
-            ("picture", self.picture, "another picture"),
+            ("picture", self.picture, self.picture.title.lower() if self.picture else ""),
             ("test", self.test, "test"),
             ("model", self.model, "model"),
         ):

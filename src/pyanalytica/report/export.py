@@ -466,7 +466,9 @@ def export_report_html(builder, show_code: bool = True) -> str:
     @media print {
         body { background: #fff; padding: 0; max-width: none; }
         .card { box-shadow: none; break-inside: auto; }
-        img { max-height: 3.6in; width: auto; max-width: 100%; break-inside: avoid; }
+        /* Full width, so a chart's labels print at a readable size; the
+           height cap keeps it to about half a page. */
+        img { width: 100%; max-height: 4.6in; object-fit: contain; break-inside: avoid; }
         table { break-inside: avoid; }
         h1, h2, h3, h4 { break-after: avoid; }
         footer { display: none; }

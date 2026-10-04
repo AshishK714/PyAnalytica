@@ -86,7 +86,7 @@ def _number(df: pd.DataFrame, col: str, reading: str, second_picture: bool) -> A
 
     box_fig, box_code = boxplot(df, col) if second_picture else (None, boxplot(df, col)[1])
     picture = Rung(
-        title="Another picture",
+        title="Boxplot",
         sentence="A boxplot shows the middle half of the values as the box, and marks any outliers.",
         figure=box_fig,
         code=box_code,
@@ -172,7 +172,7 @@ def _category(df: pd.DataFrame, col: str, reading: str, second_picture: bool) ->
     else:
         pct_fig, pct_code = None, bar_chart(df, col, orientation="horizontal", pct=True)[1]
     picture = Rung(
-        title="Another picture",
+        title="Percentages",
         sentence="The same counts as percentages of all rows.",
         figure=pct_fig,
         code=pct_code,

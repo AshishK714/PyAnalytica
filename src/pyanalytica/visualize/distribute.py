@@ -329,11 +329,15 @@ def bar_chart(
     else:
         ylabel = "Count"
 
+    # pandas stands vertical bar labels on end (rot=90); level ones read
+    # better unless there are many or they are long.
+    labels = [str(v) for v in counts.index]
+    rot = 90 if (len(labels) > 6 or sum(len(s) for s in labels) > 48) else 0
     if orientation == "horizontal":
         counts.plot.barh(ax=ax)
         ax.set_xlabel(ylabel)
     else:
-        counts.plot.bar(ax=ax)
+        counts.plot.bar(ax=ax, rot=rot)
         ax.set_ylabel(ylabel)
 
     ax.set_title(f"{'Percentage' if pct else 'Count'} of {col}")
@@ -348,7 +352,7 @@ def bar_chart(
     code = (
         f'counts = df["{col}"].value_counts(){sort_str}{pct_str}\n'
         f'fig, ax = plt.subplots(figsize=(8, 5))\n'
-        f'counts.plot.{plot_type}(ax=ax)\n'
+        f'counts.plot.{plot_type}(ax=ax{", rot=" + str(rot) if plot_type == "bar" else ""})\n'
         f'ax.{value_axis}("{ylabel}")\n'
         f'ax.set_title("{"Percentage" if pct else "Count"} of {col}")\n'
         f'plt.tight_layout()\n'

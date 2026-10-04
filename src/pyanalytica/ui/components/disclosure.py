@@ -47,15 +47,22 @@ def is_open(input, section_id: str) -> bool:
         return False
 
 
-def supporting(title: str, *content, id: str | None = None, open: bool = False):
+def _panel_value(title, id: str | None) -> str:
+    """Shiny needs a value for a panel whose title is not plain text -- a
+    title rendered by the server, such as a section named for its chart."""
+    return title if isinstance(title, str) else f"{id or 'section'}_panel"
+
+
+def supporting(title, *content, id: str | None = None, open: bool = False):
     """A section holding the numbers behind the answer.
 
     The title lives *inside* the section. A heading placed above one sits in the
     layout whether or not the thing it names exists -- which is how a failed
-    evaluation came to show "Confusion Matrix" over an empty page.
+    evaluation came to show "Confusion Matrix" over an empty page. It may be a
+    rendered output, for a section whose name depends on the result.
     """
     return ui.accordion(
-        ui.accordion_panel(title, *content),
+        ui.accordion_panel(title, *content, value=_panel_value(title, id)),
         id=id,
         open=open,
         class_="mb-3",

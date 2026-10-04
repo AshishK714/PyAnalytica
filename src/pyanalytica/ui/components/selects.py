@@ -73,6 +73,13 @@ def update_choices(
         When True, an empty selection is preserved rather than replaced with
         the first option -- for optional inputs such as "Group By".
     """
+    # An optional select's empty choice was a blank row, which read as a
+    # rendering fault rather than "no grouping". Give it a word. The value
+    # stays "", so every panel's ``input.x() or None`` still works.
+    if not isinstance(choices, Mapping):
+        choices = list(choices)
+        if choices and choices[0] == "":
+            choices = {"": "(none)", **{str(c): str(c) for c in choices[1:]}}
     values = _values(choices)
     current = _current(input, input_id)
 

@@ -25,6 +25,21 @@ def _build_facet_args(facet_col: str | None, facet_row: str | None) -> str:
     return args
 
 
+#: Shown-code lines for slanted category labels.
+ROTATE_AX_CODE = 'plt.xticks(rotation=45, ha="right")\n'
+ROTATE_GRID_CODE = 'g.set_xticklabels(rotation=45, ha="right")\n'
+
+
+def _rotate(df: pd.DataFrame, col: str) -> bool:
+    """Slant the category labels only when they would collide.
+
+    Every group chart slanted them, so two labels ("no", "yes") came out at
+    45 degrees for no reason and were harder to read than level ones.
+    """
+    labels = [str(v) for v in df[col].dropna().unique()]
+    return len(labels) > 6 or sum(len(s) for s in labels) > 48
+
+
 def grouped_boxplot(
     df: pd.DataFrame, x_cat: str, y_num: str,
     sort_by: str = "mean", hue: str | None = None,
@@ -63,7 +78,8 @@ def grouped_boxplot(
             order=order, **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(title)
-        g.set_xticklabels(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            g.set_xticklabels(rotation=45, ha="right")
         beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
@@ -72,7 +88,7 @@ def grouped_boxplot(
             f'{order_code}'
             f'g = sns.catplot(data=df, x="{x_cat}", y="{y_num}", kind="box", order=order{hue_str}{facet_str})\n'
             f'g.figure.suptitle("{title}")\n'
-            f'g.set_xticklabels(rotation=45, ha="right")\n'
+            f'{ROTATE_GRID_CODE if _rotate(df, x_cat) else ""}'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -82,7 +98,8 @@ def grouped_boxplot(
         if hue:
             beside_axes(ax)
         ax.set_title(title)
-        plt.xticks(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
 
         code = (
@@ -91,7 +108,7 @@ def grouped_boxplot(
             f'sns.boxplot(data=df, x="{x_cat}", y="{y_num}", order=order{hue_str}, ax=ax)\n'
             f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{title}")\n'
-            f'plt.xticks(rotation=45, ha="right")\n'
+            f'{ROTATE_AX_CODE if _rotate(df, x_cat) else ""}'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -128,7 +145,8 @@ def grouped_violin(
             order=order, **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"{y_num} by {x_cat}")
-        g.set_xticklabels(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            g.set_xticklabels(rotation=45, ha="right")
         beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
@@ -145,7 +163,8 @@ def grouped_violin(
         if hue:
             beside_axes(ax)
         ax.set_title(f"{y_num} by {x_cat}")
-        plt.xticks(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
 
         code = (
@@ -153,6 +172,7 @@ def grouped_violin(
             f'sns.violinplot(data=df, x="{x_cat}", y="{y_num}"{hue_str}, ax=ax)\n'
             f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{y_num} by {x_cat}")\n'
+            f'{ROTATE_AX_CODE if _rotate(df, x_cat) else ""}'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -202,7 +222,9 @@ def bar_of_means(
             **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(title)
-        g.set_xticklabels(rotation=45, ha="right")
+        g.set_ylabels(f"mean {y_num}")
+        if _rotate(df, x_cat):
+            g.set_xticklabels(rotation=45, ha="right")
         beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
@@ -210,6 +232,7 @@ def bar_of_means(
         code = (
             f'g = sns.catplot(data=df, x="{x_cat}", y="{y_num}", kind="bar"{err_str}{hue_str}{facet_str})\n'
             f'g.figure.suptitle("{title}")\n'
+            f'g.set_ylabels("mean {y_num}")\n'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -222,15 +245,20 @@ def bar_of_means(
         )
         if hue:
             beside_axes(ax)
+        # The bars are means, so the axis says so; it said "charges".
+        ax.set_ylabel(f"mean {y_num}")
         ax.set_title(title)
-        plt.xticks(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
 
         code = (
             f'fig, ax = plt.subplots(figsize=(10, 6))\n'
             f'sns.barplot(data=df, x="{x_cat}", y="{y_num}"{err_str}{hue_str}, ax=ax)\n'
             f'{AXES_CODE if hue else ""}'
+            f'ax.set_ylabel("mean {y_num}")\n'
             f'ax.set_title("{title}")\n'
+            f'{ROTATE_AX_CODE if _rotate(df, x_cat) else ""}'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )
@@ -265,7 +293,8 @@ def strip_plot(
             alpha=0.5, jitter=True, **hue_kwarg, **facet_kwargs,
         )
         g.figure.suptitle(f"{y_num} by {x_cat}")
-        g.set_xticklabels(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            g.set_xticklabels(rotation=45, ha="right")
         beside_grid(g)
         g.figure.set_layout_engine("tight")
         fig = g.figure
@@ -283,7 +312,8 @@ def strip_plot(
         if hue:
             beside_axes(ax)
         ax.set_title(f"{y_num} by {x_cat}")
-        plt.xticks(rotation=45, ha="right")
+        if _rotate(df, x_cat):
+            plt.xticks(rotation=45, ha="right")
         fig.set_layout_engine("tight", pad=1.5)
 
         code = (
@@ -291,6 +321,7 @@ def strip_plot(
             f'sns.stripplot(data=df, x="{x_cat}", y="{y_num}", alpha=0.5, jitter=True{hue_str}, ax=ax)\n'
             f'{AXES_CODE if hue else ""}'
             f'ax.set_title("{y_num} by {x_cat}")\n'
+            f'{ROTATE_AX_CODE if _rotate(df, x_cat) else ""}'
             f'plt.tight_layout()\n'
             f'plt.show()'
         )

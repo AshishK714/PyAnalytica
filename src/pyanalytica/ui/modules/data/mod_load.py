@@ -60,6 +60,18 @@ def load_server(input, output, session, state: WorkbenchState, get_current_df):
     @reactive.effect
     @reactive.event(input.load_btn)
     def _load():
+        _do_load()
+
+    @reactive.effect
+    @reactive.event(input.file_upload)
+    def _load_on_choose():
+        # Choosing a file is the decision; "Upload complete" followed by
+        # "No dataset loaded" until a second button was pressed read as a
+        # failed upload. Load Dataset still works, and reloads the file.
+        if input.source() == "upload" and input.file_upload():
+            _do_load()
+
+    def _do_load():
         src = input.source()
         try:
             if src == "bundled":

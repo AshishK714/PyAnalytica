@@ -198,7 +198,9 @@ def scatter(
             else:
                 ax.legend()
                 code_lines.append("ax.legend()")
-        if hue and beside_axes(ax):
+        # Every legend beside the plot, the fitted line's R² included: inside,
+        # it sat on the highest points.
+        if beside_axes(ax):
             code_lines.append(AXES_CODE.rstrip("\n"))
 
         ax.set_title(title)

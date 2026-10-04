@@ -54,7 +54,9 @@ def one_variable_ui():
         ui.output_plot("answer_plot", height="440px"),
         download_result_ui("dl"),
         supporting(
-            "Another picture",
+            # Named for what it holds once there is an answer: "Another
+            # picture" did not say a bar chart of means was inside.
+            ui.output_text("picture_title", inline=True),
             ui.output_plot("picture_plot", height=PLOT_HEIGHT),
             ui.output_ui("picture_text"),
             id="picture_open",
@@ -136,6 +138,13 @@ def one_variable_server(input, output, session, state: WorkbenchState, get_curre
         r = result()
         req(r is not None and r.answer.figure is not None)
         return r.answer.figure
+
+    @render.text
+    def picture_title():
+        r = result()
+        if r is None or r.picture is None:
+            return "Another picture"
+        return r.picture.title
 
     @render.plot
     def picture_plot():

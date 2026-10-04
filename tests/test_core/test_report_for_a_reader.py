@@ -67,6 +67,16 @@ def test_number_format(value, shown):
     assert _fmt_number(value) == shown
 
 
+@pytest.mark.parametrize("value", [8965.79575, 6985.50695, 28101.33305, 0.12345, 1.00005, 2.67495])
+def test_report_rounds_exactly_as_the_screen_does(value):
+    """Three medians differed from the screen in the fourth decimal."""
+    from pyanalytica.core import round_df
+
+    screen = round_df(pd.DataFrame({"v": [value]}), 4)["v"].iloc[0]
+    expected = f"{screen:,.4f}".rstrip("0").rstrip(".")
+    assert _fmt_number(value) == expected
+
+
 def test_numbers_read_as_on_screen():
     """A retest found "1,338.00" in the report where the screen said 1338:
     the report's own formatting rule disagreed with the screen."""

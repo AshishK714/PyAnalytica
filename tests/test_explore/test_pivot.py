@@ -3,7 +3,20 @@
 import pandas as pd
 import pytest
 
-from pyanalytica.explore.pivot import create_pivot_table
+from pyanalytica.explore.pivot import create_pivot_table, label_columns
+
+
+def test_columns_name_their_variable_and_the_code_does_too():
+    """Columns read "no / yes" with nothing saying which variable they were."""
+    df = pd.DataFrame({"g": ["a", "a", "b"], "smoker": ["no", "yes", "no"], "v": [1.0, 2.0, 3.0]})
+    raw, snippet = create_pivot_table(df, "g", "smoker", "v", aggfunc="mean", margins=True)
+    assert list(raw.columns) == ["no", "yes", "All"]  # the library keeps pandas' labels
+    result, snippet = label_columns(raw, "smoker", snippet)
+    assert list(result.columns) == ["smoker = no", "smoker = yes", "All"]
+    ns = {"df": df, "pd": pd}
+    exec(snippet.code, ns)
+    assert list(ns["result"].columns) == list(result.columns)
+    pd.testing.assert_frame_equal(ns["result"], result)
 
 
 @pytest.fixture

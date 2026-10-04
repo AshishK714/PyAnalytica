@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.4] - 2026-10-04
+
+The third student-style run, on 0.10.3, finished the assignment inside the
+app with no workarounds. These are its findings, plus one bug CI had been
+catching at random.
+
+### A bug found by CI, not by the run
+
+- **Column types could come from a different, freed DataFrame.** They are
+  cached by `id(df)`, and an id is unique only among live objects: once a
+  frame is freed, the next one can be given its id, and the cache handed the
+  new frame the old one's column types. CI failed on it once in five Python
+  versions (titanic offered a column "b"); in the app it could fill a
+  dropdown with another dataset's columns after a transform replaced a
+  frame. The cache entry now holds the frame and is used only for that same
+  frame with the same columns.
+
+### The report and the screen
+
+- **Report numbers round exactly as the screen does.** Three medians
+  differed in the fourth decimal: the screen rounds with numpy, the report
+  with Python's `round`, and the two disagree on values that sit on a half.
+  The report now rounds with numpy.
+- **"Another picture" is named for its chart:** "Bar chart of means",
+  "Density view (hexbin)", "Percentages of all rows", "Boxplot",
+  "Percentages", on the section header and in the report cell's name. A
+  student looking for the bar chart of averages did not know it was there.
+- **Pivot names the column variable in its columns,** "smoker = yes" not
+  "yes", on screen and in the shown code. `create_pivot_table` itself keeps
+  pandas' labels, which callers index by; the panel adds the names through
+  `label_columns`.
+- **Two-category bars follow the table's order** (alphabetical); they were
+  sorted by count beside an alphabetical table.
+
+### Charts
+
+- Bars of means label their axis "mean charges", not "charges".
+- Category labels slant only when there are more than six or they are long;
+  two labels ("no", "yes") were set at 45 or 90 degrees for no reason. The
+  violin, bar-of-means and strip snippets now write the rotation they draw,
+  which they never had.
+- A plain scatter's R² legend sits beside the plot, like every other legend,
+  not on the highest points.
+
+### Report Builder and forms
+
+- **No "Add Title" button.** The Title and Author boxes already print at the
+  top of every export, so a title cell printed them twice.
+- **Text cells start empty with a formatting hint** (# heading, **bold**,
+  - list) as the placeholder; the old default text had to be deleted first.
+- **Printed charts use the full width,** up to about half a page high, so
+  their labels print at a readable size.
+- **Optional selects say "(none)"** for their empty choice, which was a
+  blank row. The value is still "", so nothing reading it changes.
+- **Choosing a file to upload loads it.** "Upload complete" followed by "No
+  dataset loaded" until a second button was pressed read as a failed upload.
+  Load Dataset still works and reloads the file.
+
+Not changed, by design: inside a report cell the table comes before the
+chart, as on screen; a one-variable boxplot has no y-axis label, because it
+has no y variable; bars of means keep their 95% confidence intervals, which
+the section's caption explains.
+
 ## [0.10.3] - 2026-10-03
 
 The rest of the second student-style run's findings. None made a report

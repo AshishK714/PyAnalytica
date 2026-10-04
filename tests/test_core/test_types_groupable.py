@@ -57,6 +57,36 @@ class TestIsGroupable:
         assert is_groupable(series, max_levels=20)
 
 
+class TestTheClassificationCacheCannotServeAnotherFrame:
+    """CI failed at random: titanic was offered a column "b" that belonged to
+    a frame freed earlier, whose id the new frame had been given."""
+
+    def test_an_entry_for_a_different_object_with_the_same_id_is_ignored(self):
+        from pyanalytica.core import types
+
+        df = pd.DataFrame({"real": ["x", "y"]})
+        stale = pd.DataFrame({"b": ["p", "q"]})
+        # What id reuse produces: an entry under this frame's id, built for
+        # another frame.
+        types._classify_cache.clear()
+        types._classify_cache[id(df)] = (stale, {"b": types.ColumnType.CATEGORICAL})
+        assert list(types.classify_columns(df)) == ["real"]
+
+    def test_a_column_added_in_place_is_seen(self):
+        from pyanalytica.core.types import classify_columns
+
+        df = pd.DataFrame({"a": [1.5, 2.5]})
+        assert list(classify_columns(df)) == ["a"]
+        df["g"] = ["x", "y"]
+        assert list(classify_columns(df)) == ["a", "g"]
+
+    def test_the_same_frame_hits_the_cache(self):
+        from pyanalytica.core.types import classify_columns
+
+        df = pd.DataFrame({"a": [1.5, 2.5]})
+        assert classify_columns(df) is classify_columns(df)
+
+
 class TestBundledDatasets:
     def test_titanic_offers_survived_and_pclass(self):
         df, _ = load_bundled("titanic")

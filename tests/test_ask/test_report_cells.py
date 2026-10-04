@@ -50,7 +50,7 @@ def test_each_open_section_is_its_own_cell(df):
     cells = r.report_cells({"picture", "test", "model"})
     assert [c[0] for c in cells] == [
         r.description,
-        f"{r.description}, another picture",
+        f"{r.description}, bar chart of means",
         f"{r.description}, test",
         f"{r.description}, model",
     ]

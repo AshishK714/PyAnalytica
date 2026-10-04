@@ -140,6 +140,27 @@ class TestTwoVariables:
         assert "How does Y relate to X?" in _answer(page, MOD2)
 
 
+class TestUploadLoadsOnChoose:
+    """"Upload complete" then "No dataset loaded" read as a failed upload."""
+
+    def test_choosing_a_file_loads_it_without_a_second_press(self, page, tmp_path_factory):
+        csv = tmp_path_factory.mktemp("upload") / "choose_loads.csv"
+        csv.write_text("g,v\na,1\nb,2\nc,3\n", encoding="utf-8")
+        _nav_to(page, "Data", "Load")
+        _wait_stable(page, 1500)
+        page.locator(f"{_sid('load', 'source')} input[type=radio][value='upload']").first.check()
+        _wait_stable(page, 1200)
+        page.locator(_sid("load", "file_upload")).set_input_files(str(csv))
+        _wait_stable(page, 4000)
+        info = page.locator(_sid("load", "load_info")).inner_text()
+        assert "3 rows" in info, info
+        status = page.locator(_sid("load", "status-panel_status")).inner_text()
+        assert "choose_loads" in status, status
+        # Leave the page as the later tests expect it: tips active, bundled
+        # picker showing. The upload made the three-row file the active one.
+        _load_bundled(page, "tips")
+
+
 class TestReportFromTheGuidedPanels:
     """Open sections become their own cells; a cell moves in one step."""
 

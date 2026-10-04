@@ -149,7 +149,7 @@ def _cell_card_html(
         )
         content = (
             f'<textarea rows="4" '
-            f'placeholder="Enter markdown text..." '
+            f'placeholder="Text for the report. # Heading, ## Smaller heading, **bold**, *italic*, - list item." '
             f'onchange="{js_md}" '
             f'style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:8px;'
             f'font-size:0.85rem;font-family:monospace;resize:vertical;outline:none;'
@@ -230,7 +230,6 @@ def report_builder_ui():
                     ui.div(
                         ui.input_action_button("import_proc", "Import from Procedure", class_="btn-primary btn-sm"),
                         ui.input_action_button("run_all", "Run All Cells", class_="btn-success btn-sm"),
-                        ui.input_action_button("add_title_cell", "Add Title", class_="btn-outline-secondary btn-sm"),
                         ui.input_action_button("add_text_cell", "Add Text", class_="btn-outline-secondary btn-sm"),
                         ui.input_action_button("clear_report", "Clear", class_="btn-outline-danger btn-sm"),
                         class_="d-flex align-items-center gap-2 flex-wrap mt-1",
@@ -339,16 +338,16 @@ def report_builder_server(input, output, session, state: WorkbenchState, get_cur
         _bump()
 
     # --- Add cells ---
-    @reactive.effect
-    @reactive.event(input.add_title_cell)
-    def _add_title():
-        builder.add_title_cell()
-        _bump()
+    # No "Add Title" button: the Title and Author boxes above already print
+    # at the top of every export, and a title cell printed them a second
+    # time. ReportBuilder.add_title_cell stays for code that calls it.
 
     @reactive.effect
     @reactive.event(input.add_text_cell)
     def _add_text():
-        builder.add_markdown_cell(markdown="Enter your text here...")
+        # Empty, so the placeholder's formatting hint shows; the old default
+        # text had to be deleted before typing.
+        builder.add_markdown_cell(markdown="")
         _bump()
 
     # --- Clear ---

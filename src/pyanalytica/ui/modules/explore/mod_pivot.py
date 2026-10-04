@@ -6,7 +6,7 @@ from shiny import module, reactive, render, req, ui
 
 from pyanalytica.core import round_df
 from pyanalytica.core.state import WorkbenchState
-from pyanalytica.explore.pivot import create_pivot_table
+from pyanalytica.explore.pivot import create_pivot_table, label_columns
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.table_caption import table_caption
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
@@ -82,6 +82,7 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
             margins=input.margins(),
             normalize=normalize,
         )
+        result_df, snippet = label_columns(result_df, cols or None, snippet)
         across = f" and {cols}" if cols else ""
         last_desc.set(f"Pivot: {input.aggfunc()} of {vals} by {', '.join(idx)}{across}")
         state.codegen.record(snippet, action="explore", description=last_desc())

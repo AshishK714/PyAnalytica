@@ -50,7 +50,13 @@ def _fmt_number(value, decimals: int = REPORT_DECIMALS) -> str:
     if v != 0 and abs(v) < floor:
         limit = f"{10 ** -decimals:.{decimals}f}"
         return f"< {limit}" if v > 0 else f"> -{limit}"
-    r = round(v, decimals)
+    # numpy's rounding, which is what the screen's round_df uses. Python's
+    # round() works from the exact binary value and numpy's scales first, so
+    # on a value that sits on a half they could differ in the last place:
+    # 8965.79575 showed as 8965.7958 on screen and 8,965.7957 in the report.
+    import numpy as _np
+
+    r = float(_np.round(v, decimals))
     if r == int(r) and abs(r) < 1e15:
         return f"{int(r):,}"
     return f"{r:,.{decimals}f}".rstrip("0").rstrip(".")

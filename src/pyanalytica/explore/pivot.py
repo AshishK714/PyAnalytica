@@ -114,3 +114,21 @@ def create_pivot_table(
             code += f"\nresult = result / {body_a}.sum().sum() * 100"
 
     return result, CodeSnippet(code=code, imports=["import pandas as pd"])
+
+
+def label_columns(
+    result: pd.DataFrame, columns: str | None, snippet: CodeSnippet,
+) -> tuple[pd.DataFrame, CodeSnippet]:
+    """Name the column variable in every column: "smoker = yes", not "yes".
+
+    The values alone did not say which variable they were, and once the table
+    left the panel -- into a report, a download -- nothing else did either.
+    Applied by the Pivot panel, with the same line added to its shown code;
+    ``create_pivot_table`` itself keeps pandas' column labels, which callers
+    index by.
+    """
+    if not columns:
+        return result, snippet
+    labelled = result.rename(columns=lambda c: c if c == "All" else f"{columns} = {c}")
+    line = f'result = result.rename(columns=lambda c: c if c == "All" else f"{columns} = {{c}}")'
+    return labelled, CodeSnippet(code=f"{snippet.code}\n{line}", imports=snippet.imports)

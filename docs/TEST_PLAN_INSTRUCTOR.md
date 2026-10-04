@@ -253,7 +253,7 @@ Expect to find things here. Anything at all is a useful finding.
 | | Do | Expect | ✓ |
 |---|---|---|---|
 | 3B.1 | Import from Procedure | Cells appear | |
-| 3B.2 | Add Title, Add Text, type into both | Text persists | |
+| 3B.2 | Title box, Add Text, type into both; edit a code cell heading | Text persists; heading prints in Preview | |
 | 3B.3 | Run All Cells | Output under each | |
 | 3B.4 | Preview | Renders | |
 | 3B.5 | Download HTML, open it **offline** | Reads as a report; charts present, not broken images | |

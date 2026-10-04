@@ -181,7 +181,7 @@ Go back to **Classify**, run a model, and look for a way to save it.
 | | Question | Answer |
 |---|---|---|
 | C2.1 | Click **Import from Procedure**. Did anything appear? | Yes / No |
-| C2.2 | **Add Title** and **Add Text**. Can you type into them? | Yes / No |
+| C2.2 | Type a **Title** in the box at the top, then **Add Text** and type into it. Does both show in Preview? | Yes / No |
 | C2.3 | Click **Run All Cells**. What happened? | |
 | C2.4 | Click **Preview**. Does a preview appear? | Yes / No |
 | C2.5 | Download **HTML**. Open it — does it look like a report? | Yes / No |

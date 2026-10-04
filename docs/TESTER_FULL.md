@@ -464,7 +464,7 @@ These use a model you saved earlier. Go back to **Classify**, run a model, and s
 | | Question | Answer |
 |---|---|---|
 | 7.9 | Click **Import from Procedure**. Did anything appear? | Yes / No |
-| 7.10 | **Add Title** and **Add Text**. Can you type into them? | Yes / No |
+| 7.10 | Type a **Title** in the box at the top, then **Add Text** and type into it. Does both show in Preview? | Yes / No |
 | 7.11 | Click **Run All Cells**. What happened? | |
 | 7.12 | Click **Preview**. Does a preview appear? | Yes / No |
 | 7.13 | Download **HTML**. Open it in your browser — does it look like a report? | Yes / No |

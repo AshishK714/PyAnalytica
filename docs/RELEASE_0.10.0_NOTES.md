@@ -20,6 +20,13 @@
 > editable text boxes; colour legends sit beside the plot; two groups get
 > blue and orange; guided-panel tables use readable column names ("mean
 > charges", "smoker = yes (% of row)").
+>
+> **0.10.4 (4 October)** follows a third run: report numbers round as the
+> screen does; the second-picture section is named for its chart ("Bar chart
+> of means"); Pivot names its column variable ("smoker = yes"); "Add Title" is
+> gone (the Title box already prints); choosing a file to upload loads it;
+> optional selects say "(none)". Also a fix for column types occasionally
+> taken from a different dataset.
 
 Written 2 October 2026 for the next session, which will work through a
 nine-question visualization assignment in the app and report every point of

@@ -185,7 +185,7 @@ def _number_by_category(
     else:
         bar_fig, bar_code = None, bar_of_means(df, cat, num, hue=color, order=order)[1]
     picture = Rung(
-        title="Another picture",
+        title="Bar chart of means",
         sentence="One bar per group at its mean, with a 95% confidence interval on each.",
         figure=bar_fig,
         code=bar_code,
@@ -358,7 +358,7 @@ def _number_by_number(
     else:
         hex_fig, hex_code = None, hexbin(df, x, y)[1]
     picture = Rung(
-        title="Another picture",
+        title="Density view (hexbin)",
         sentence="A density view: darker cells hold more rows, which a scatter plot hides when points overlap.",
         figure=hex_fig,
         code=hex_code,
@@ -469,7 +469,8 @@ def _category_by_category(
         ),
         imports=["import pandas as pd"],
     )
-    fig, bar_code = bar_chart(df, x, group_by=y, facet_col=color)
+    # Name order, as the table beside it is; by count, the two disagreed.
+    fig, bar_code = bar_chart(df, x, group_by=y, facet_col=color, sort=False)
     answer = Rung(
         title="Describe",
         sentence=sentence,
@@ -483,11 +484,11 @@ def _category_by_category(
     )
 
     if second_picture:
-        pct_fig, pct_code = bar_chart(df, x, group_by=y, pct=True, facet_col=color)
+        pct_fig, pct_code = bar_chart(df, x, group_by=y, pct=True, facet_col=color, sort=False)
     else:
-        pct_fig, pct_code = None, bar_chart(df, x, group_by=y, pct=True, facet_col=color)[1]
+        pct_fig, pct_code = None, bar_chart(df, x, group_by=y, pct=True, facet_col=color, sort=False)[1]
     picture = Rung(
-        title="Another picture",
+        title="Percentages of all rows",
         sentence="The same split as percentages of all rows, so bars can be compared across panels.",
         figure=pct_fig,
         code=pct_code,
