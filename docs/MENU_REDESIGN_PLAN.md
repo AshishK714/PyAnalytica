@@ -41,6 +41,10 @@ Decided by the instructor:
   hand from what the app shows (n, mean, std dev per group; counts and rates
   from Cross-tab), using the formulas taught in class. The brief accepts an
   interval or a test, and the app gives the test. C12 is deferred.
+  One interval already exists and stays: Advanced > Proportions,
+  Two-Sample Proportion, reports a 95% interval for the difference of two
+  rates (the instructor is content for learners to find it there). The
+  correlation test also gives a 95% interval for r.
 
 Everything else that came up and is not being built now is in section 10,
 the parking lot.
