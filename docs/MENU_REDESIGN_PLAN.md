@@ -18,6 +18,30 @@ Related files:
 
 ---
 
+## 0. Scope decision, 4 October 2026: freeze, then a narrower Stage 1
+
+Decided by the instructor:
+
+- **Freeze until 18 October.** Learners are doing HW4 and the FPF conference
+  report project (a Word template; charts, tables, within-group context
+  checks, one interval or test; no models). Until the project is due, the
+  app gets bug fixes and one addition only: a **Download PNG** button on every
+  chart (0.10.5), so charts can go into the Word template. No menu moves.
+- **Model and Report work is on hold.** Neither assignment needs it. Every
+  finding below whose work package touches Model or Report is marked
+  *deferred: Model/Report hold* in the tracker and is not part of Stage 1 or
+  Stage 2 until the instructor lifts the hold. Stage 1 keeps the type system,
+  labels and the Data, Describe and Relate fixes.
+- **No confidence-interval feature for now.** Learners compute intervals by
+  hand from what the app shows (n, mean, std dev per group; counts and rates
+  from Cross-tab), using the formulas taught in class. The brief accepts an
+  interval or a test, and the app gives the test. C12 is deferred.
+
+Everything else that came up and is not being built now is in section 10,
+the parking lot.
+
+---
+
 ## 1. Who the app is for
 
 Free, open-source software for teaching analytics through a graphical
@@ -300,16 +324,16 @@ column as work lands.
 | S5 | high | 2b | |
 | S6 | low | 2b | |
 | S7 | medium | description 1.9; features 2b | |
-| S8 | medium | 2c | |
-| S9 | medium | Stage 3 | |
-| S10 | medium | 2c | |
+| S8 | medium | 2c | deferred: Model/Report hold |
+| S9 | medium | Stage 3 | deferred: Model/Report hold |
+| S10 | medium | 2c | deferred: Model/Report hold |
 | S11 | high | 1.7 | |
 | S12 | low | 2c | |
-| S13 | medium | 2c | |
-| C1 | high | 1.5 | |
-| C2 | high | 1.5 (label only; behavior already right) | |
-| C3 | high | 1.5 (visible checkbox; already standardizes) | |
-| C4 | medium | 2c | |
+| S13 | medium | 2c | deferred: Model/Report hold |
+| C1 | high | 1.5 | deferred: Model/Report hold |
+| C2 | high | 1.5 (label only; behavior already right) | deferred: Model/Report hold |
+| C3 | high | 1.5 (visible checkbox; already standardizes) | deferred: Model/Report hold |
+| C4 | medium | 2c | deferred: Model/Report hold |
 | C5 | medium | 2b | |
 | C6 | high | 1.6 | |
 | C7 | high | 2a | |
@@ -317,18 +341,18 @@ column as work lands.
 | C9 | medium | 1.5 | |
 | C10 | medium | 1.5 | |
 | C11 | medium | 1.5 | |
-| C12 | medium | 2c | |
-| C13 | medium | undo in 1.10; steps applied in Stage 3 | |
+| C12 | medium | 2c | deferred: Model/Report hold |
+| C13 | medium | undo in 1.10; steps applied in Stage 3 | deferred: Model/Report hold |
 | C14 | medium | 2b | |
 | C15 | low | 1.5 | |
 | C16 | low | 1.5 | |
-| C17 | low | 1.5 | |
+| C17 | low | 1.5 | deferred: Model/Report hold |
 | C18 | medium | 2b | |
 | C19 | low | 2b | |
 | C20 | low | 1.8 | |
 | C21 | low | 2c | |
-| T1 | high | 1.4 | |
-| T2 | high | 1.3 | |
+| T1 | high | 1.4 | deferred: Model/Report hold |
+| T2 | high | 1.3 | deferred: Model/Report hold |
 | T3 | high | 2b | |
 | T4 | high | 1.1, 1.2; Overview in 2b | |
 | T5 | medium | 1.1 | |
@@ -341,15 +365,15 @@ column as work lands.
 | T12 | medium | 2b | |
 | T13 | medium | 1.1 | |
 | T14 | medium | 2b | |
-| T15 | medium | 1.4 | |
+| T15 | medium | 1.4 | deferred: Model/Report hold |
 | T16 | low | 1.1 | |
 | T17 | medium | 1.3 | |
 | L1 | medium | 1.9 | |
 | L2 | medium | 1.9 | |
 | L3 | medium | 1.9 | |
 | L4 | medium | Stage 3 | |
-| L5 | medium | 1.4 | |
-| M1 | new | 1.5 | |
+| L5 | medium | 1.4 | deferred: Model/Report hold |
+| M1 | new | 1.5 | deferred: Model/Report hold |
 | Naming tables | | 1.8 (labels); 2a to 2c (panel names) | |
 
 ---
@@ -392,3 +416,41 @@ folder. Each assumes the decisions in section 2 are filled in.
 > model pipeline and steps applied, with the shown-code library decided and
 > justified, worked examples for every current chart and test, and a migration
 > checklist. Write no code in this session.
+
+---
+
+## 10. Parking lot: everything noted and not built yet
+
+Collected from the review, the four student-style runs (logs in
+`MSTM_F_26/Week_6/HW4_app_test*`) and the instructor's discussion. Each line
+says where it would fit. Nothing here is scheduled until moved into a stage.
+
+### From the fourth student-style run (0.10.4) and not fixed
+
+| Item | Where it fits |
+|---|---|
+| Open sections are sent to the report silently: a section opened once stays open on later answers and its chart goes into the next Add to Report. Options: close sections on a new answer, or list what will be sent before adding | Stage 1, WP 1.9 (small) |
+| The density view (hexbin) ignores Colour by: it pools both groups under a scatter that splits them | Stage 1, with the chart fixes; or Stage 3's chart component |
+| "Percentages of all rows" chart uses a different base from the row-percent table beside it | Stage 1 labels, or chart it as % of row |
+| Tables are misaligned inside Report Builder's editor (the export is fine) | Deferred: Model/Report hold |
+| Two shades of the second colour (light in histograms and scatters, dark in boxes and bars) | Stage 3 chart component (one palette with one alpha rule) |
+| Data > Load says "rows 1 through 12 of 100" for a 1,338-row file: the preview shows the first 100 rows and does not say so | Stage 1 labels |
+| Pivot's empty choice reads "(None)", Cross-tab's "(None)", Normalize's "None"; everywhere else "(none)" | Stage 1 labels |
+| The printed PDF has many part-blank pages | Deferred: Model/Report hold |
+| Inside a report cell the table comes before the chart (same order as the screen) | Deferred: Model/Report hold; revisit with the report outline (S13) |
+
+### Ideas raised in discussion
+
+| Item | Where it fits |
+|---|---|
+| **Confidence interval for a difference** (means, rates) in Two Variables' test section (C12). Learners compute it by hand for now | Deferred; revisit after the term |
+| **Simpson's paradox flag**: when Colour by reverses the direction of the overall comparison in some or all groups, say so in the answer sentence | Stage 1 teaching wording (WP 1.9) or Stage 2a |
+| **Grammar-of-graphics chart builder** (geom, stat, position as separate choices; "Bar" with "height shows count, percent, average, median, total") | Stage 3 design; the review's section 2 |
+| **Average versus mean wording** everywhere a learner reads it; "Average (mean)" where the term must be learned | Stage 1 labels (the review's naming table covers it) |
+| **Higher-resolution chart download** drawn on the server (the 0.10.5 button saves the on-screen image) | Small; any time after the freeze |
+| **Student guide for the new menu**: one page mapping 0.9 paths to 0.10 paths, and `check_upgrade.py` raised to the published version, when 0.10.x goes to PyPI | Before any PyPI release (D4) |
+
+### From the review, held with Model and Report
+
+S8, S9, S10, S13, C1, C2, C3, C4, C12, C13, C17, T1, T2, T15, L5 and M1, as
+marked in the tracker.

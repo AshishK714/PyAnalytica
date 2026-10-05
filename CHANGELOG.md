@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.5] - 2026-10-04
+
+- **A Download PNG button on every chart.** Learners put charts into reports
+  written outside the app, such as a Word template or slides, and the only
+  way out was right-click > Save image as, which most did not know existed.
+  One script (`ui/www/chart_download.js`) adds the button to every plot the
+  app draws, including any added later, and saves exactly the picture on
+  screen. The button shows only when there is a chart, and is hidden when
+  printing.
+
+The app is otherwise frozen until 18 October while learners use it for
+coursework; see `docs/MENU_REDESIGN_PLAN.md` section 0.
+
 ## [0.10.4] - 2026-10-04
 
 The third student-style run, on 0.10.3, finished the assignment inside the

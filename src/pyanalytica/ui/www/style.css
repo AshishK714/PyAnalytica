@@ -529,3 +529,22 @@ pre.shiny-text-output {
     padding: 0.45rem 0.7rem !important;
   }
 }
+
+/* ----- Download PNG on every chart (chart_download.js) ----- */
+.pa-chart-download {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 5;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    opacity: 0.85;
+    border: 1px solid #ced4da;
+}
+.pa-chart-download:hover,
+.pa-chart-download:focus {
+    opacity: 1;
+}
+@media print {
+    .pa-chart-download { display: none !important; }
+}

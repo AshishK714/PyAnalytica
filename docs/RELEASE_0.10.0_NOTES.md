@@ -27,6 +27,9 @@
 > gone (the Title box already prints); choosing a file to upload loads it;
 > optional selects say "(none)". Also a fix for column types occasionally
 > taken from a different dataset.
+>
+> **0.10.5 (4 October)** adds a **Download PNG** button at the top right of
+> every chart, for putting charts into a report written outside the app.
 
 Written 2 October 2026 for the next session, which will work through a
 nine-question visualization assignment in the app and report every point of

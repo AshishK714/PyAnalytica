@@ -140,6 +140,48 @@ class TestTwoVariables:
         assert "How does Y relate to X?" in _answer(page, MOD2)
 
 
+class TestChartsCanBeDownloaded:
+    """Charts go into reports written outside the app; right-click > Save image
+    as was the only way out, and most learners did not know it existed."""
+
+    def test_every_chart_on_screen_offers_a_png_download(self, page, tmp_path_factory):
+        _load_bundled(page, "tips")
+        _nav_to(page, "Relate", "Two Variables")
+        _wait_stable(page, 1500)
+        _select_option(page, _sid(MOD2, "y"), "tip")
+        _select_option(page, _sid(MOD2, "x"), "day")
+        _select_option(page, _sid(MOD2, "color_by"), "")
+        _click_button(page, _sid(MOD2, "run_btn"))
+        _wait_stable(page, 4000)
+
+        button = page.locator(f"#{MOD2}-answer_plot .pa-chart-download")
+        assert button.count() == 1
+        assert button.is_visible() and button.is_enabled()
+
+        with page.expect_download(timeout=15_000) as download:
+            button.click()
+        path = tmp_path_factory.mktemp("png") / download.value.suggested_filename
+        download.value.save_as(path)
+        assert path.suffix == ".png"
+        assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n", "not a PNG file"
+
+    def test_a_panel_outside_the_guided_ones_has_it_too(self, page):
+        _nav_to(page, "Advanced", "Scatter")
+        _wait_stable(page, 1500)
+        _select_option(page, _sid("relate", "x"), "total_bill")
+        _select_option(page, _sid("relate", "y"), "tip")
+        _click_button(page, _sid("relate", "run_btn"))
+        _wait_stable(page, 4000)
+        assert page.locator("#relate-chart .pa-chart-download").is_visible()
+
+    def test_an_empty_chart_area_shows_no_button(self, page):
+        _nav_to(page, "Describe", "One Variable")
+        _wait_stable(page, 1500)
+        # Nothing has been described yet in this panel on this page load.
+        buttons = page.locator(f"#{MOD1}-answer_plot .pa-chart-download")
+        assert buttons.count() == 0 or not buttons.first.is_visible()
+
+
 class TestUploadLoadsOnChoose:
     """"Upload complete" then "No dataset loaded" read as a failed upload."""
 

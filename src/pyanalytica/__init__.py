@@ -19,7 +19,7 @@ Quick start (library)::
     fig, code = histogram(df, "total_bill")
 """
 
-__version__ = "0.10.4"
+__version__ = "0.10.5"
 
 # Core types
 from pyanalytica.core.codegen import CodeSnippet
