@@ -82,5 +82,5 @@ def summarize_server(input, output, session, state: WorkbenchState, get_current_
         req(df is not None)
         return render.DataGrid(round_df(df, get_dec()), height="500px")
 
-    download_result_server("dl", get_df=result, filename="summary")
+    download_result_server("dl", get_df=result, filename=lambda: last_desc() or "summary", decimals=get_dec)
     code_panel_server("code", get_code=last_code, state=state, action="explore", description=last_desc)

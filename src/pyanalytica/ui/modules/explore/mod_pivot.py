@@ -108,5 +108,5 @@ def pivot_server(input, output, session, state: WorkbenchState, get_current_df):
         req(df is not None)
         return render.DataGrid(round_df(df, get_dec()), height="500px")
 
-    download_result_server("dl", get_df=result, filename="pivot_table")
+    download_result_server("dl", get_df=result, filename=lambda: last_desc() or "pivot_table", decimals=get_dec)
     code_panel_server("code", get_code=last_code, state=state, action="explore", description=last_desc)

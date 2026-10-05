@@ -207,5 +207,5 @@ def means_server(input, output, session, state: WorkbenchState, get_current_df):
             class_="mt-2 p-2 bg-light rounded",
         )
 
-    download_result_server("dl", get_df=lambda: test_result_val().group_stats, filename="group_stats")
+    download_result_server("dl", get_df=lambda: test_result_val().group_stats, filename="group_stats", decimals=get_dec)
     code_panel_server("code", get_code=last_code, state=state, action="analyze", description="Means test")

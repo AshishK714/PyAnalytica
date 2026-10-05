@@ -120,5 +120,5 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
         req(r is not None)
         return render.DataGrid(round_df(r.table.reset_index(), get_dec()), height="400px")
 
-    download_result_server("dl", get_df=lambda: result().table.reset_index(), filename="crosstab")
+    download_result_server("dl", get_df=lambda: result().table.reset_index(), filename=lambda: last_desc() or "crosstab", decimals=get_dec)
     code_panel_server("code", get_code=last_code, state=state, action="explore", description=last_desc)

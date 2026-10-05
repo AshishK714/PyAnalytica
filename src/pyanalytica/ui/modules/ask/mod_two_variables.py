@@ -236,7 +236,9 @@ def two_variables_server(input, output, session, state: WorkbenchState, get_curr
         return render.DataGrid(round_df(r.model.table, get_dec()))
 
     download_result_server(
-        "dl", get_df=lambda: result().answer.table if result() else None, filename="relate",
+        "dl", get_df=lambda: result().answer.table if result() else None,
+        filename=lambda: result().description if result() else "relate",
+        decimals=get_dec,
     )
     def _report_cells():
         r = result()

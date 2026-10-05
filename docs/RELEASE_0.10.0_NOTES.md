@@ -37,6 +37,10 @@
 > many rows blanks left out; One Variable names two peaks instead of calling
 > them symmetric; Welch's t-test prints Welch's df; the two-proportion
 > difference names its order; Cross-tab and Profile labels fixed.
+>
+> **0.10.7 (5 October)** follows two HW4 runs on 0.10.6 (no blockers):
+> sentences name every tied group; CSV downloads are rounded as the screen
+> shows; downloads are named for their content.
 
 Written 2 October 2026 for the next session, which will work through a
 nine-question visualization assignment in the app and report every point of

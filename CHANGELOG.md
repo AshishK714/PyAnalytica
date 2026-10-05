@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.7] - 2026-10-05
+
+Two student-style runs of HW4 on 0.10.6, one assembling the report in the
+app and one from downloads as a Word user would, finished all nine
+questions with no blockers; every number matched an independent pandas
+check. These are the app findings worth fixing before learners start.
+
+- **Tied groups are all named.** A sentence named one lowest group where
+  two tied at the shown value ("17.8% (region = northwest)"; southwest was
+  17.8% too), and a learner copying it would misreport. Two Variables (both
+  kinds of comparison) and One Variable's most and least common now name
+  every group tied at the number they print.
+- **CSV downloads hold the numbers the screen shows.** Results tables (One
+  and Two Variables, Group By, Pivot, Cross-tab, Means, Regression) are
+  rounded by the panel's decimals control and written with that many places
+  throughout (30679.00, not 30679 beside 8434.268297856202). Data downloads
+  (View, Predict) keep full precision.
+- **Downloads are named for what they hold.** A CSV takes the panel's
+  description ("charges_by_region_split_by_smoker.csv"); a chart takes the
+  panel and the columns chosen in it
+  ("two_variables_charges_region_smoker_answer.png"). Every download from a
+  panel used to share one name.
+
 ## [0.10.6] - 2026-10-05
 
 A student-style run of a conference-report project (5,000 rows, a yes/no

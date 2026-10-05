@@ -23,7 +23,8 @@ from pyanalytica.analyze.correlation import correlation_test
 from pyanalytica.analyze.means import one_way_anova, two_sample_ttest
 from pyanalytica.analyze.proportions import chi_square_test
 from pyanalytica.ask._result import (
-    AskResult, Rung, combine_code, fmt, reading_sentence, resolve_kind, strength,
+    AskResult, Rung, and_list, combine_code, fmt, reading_sentence, resolve_kind, strength,
+    tied,
 )
 from pyanalytica.core.codegen import CodeSnippet
 from pyanalytica.core.types import MAX_GROUPABLE_LEVELS
@@ -167,9 +168,11 @@ def _number_by_category(
     means = df.groupby(groups, observed=True)[num].mean().dropna()
     hi, lo = means.idxmax(), means.idxmin()
     where = " / ".join(groups)
+    his = and_list([_label(k) for k in tied(means, "max")])
+    los = and_list([_label(k) for k in tied(means, "min")])
     sentence = (
-        f"Mean {num} is highest for {where} = {_label(hi)} ({fmt(means[hi])}) and lowest for "
-        f"{where} = {_label(lo)} ({fmt(means[lo])}), a gap of {fmt(means[hi] - means[lo])}."
+        f"Mean {num} is highest for {where} = {his} ({fmt(means[hi])}) and lowest for "
+        f"{where} = {los} ({fmt(means[lo])}), a gap of {fmt(means[hi] - means[lo])}."
     ) + _coverage(df, [num, cat, color])
     # One order everywhere on the screen: the table is in name order, so the
     # boxplot and the bars are too. Three orders for the same groups on one
@@ -470,9 +473,12 @@ def _category_by_category(
         outcome = spread.idxmax()
     col = pct[outcome]
     where = f"{color} / {x}" if color else x
+    pct1 = lambda v: f"{v:.1f}"  # noqa: E731  (as the table shows it)
+    lows = and_list([_label(k) for k in tied(col, "min", shown=pct1)])
+    highs = and_list([_label(k) for k in tied(col, "max", shown=pct1)])
     sentence = (
-        f"The share of {y} = {outcome} ranges from {col.min():.1f}% ({where} = {_label(col.idxmin())}) "
-        f"to {col.max():.1f}% ({where} = {_label(col.idxmax())}) across the {where} groups."
+        f"The share of {y} = {outcome} ranges from {col.min():.1f}% ({where} = {lows}) "
+        f"to {col.max():.1f}% ({where} = {highs}) across the {where} groups."
     ) + _coverage(df, [x, y, color])
     # Each outcome column names its variable and what the number is: "no /
     # yes" alone did not say it meant smoker, nor that rows add to 100.

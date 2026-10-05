@@ -8,22 +8,56 @@
  * including ones added later, and saves exactly the picture on screen.
  *
  * The button is added once per plot container and enabled only while the
- * container holds an image. Filenames come from the plot's id, e.g.
- * "two_variables_answer_plot.png", plus the chart's title when the server
- * provides one in the image's alt text.
+ * container holds an image. The file is named for what the chart shows: the
+ * panel, the columns chosen in it, and which chart of the panel it is, e.g.
+ * "two_variables_charges_region_smoker_answer.png". Named by the plot's id
+ * alone, every chart from a panel was "two_variables_answer_plot.png", and a
+ * learner saving one per question got (1), (2), (3) ... and no way to tell
+ * them apart.
  */
 (function () {
   "use strict";
 
   var BUTTON_CLASS = "pa-chart-download";
 
+  // Choices that say nothing about the chart: empty, "(none)", the defaults
+  // of the "treat as" selects.
+  var SKIP = { "": 1, "auto": 1, "none": 1, "(none)": 1 };
+
+  function visible(el) {
+    var box = el.closest(".shiny-input-container") || el;
+    return box.offsetParent !== null;
+  }
+
+  // The values of the select boxes in the plot's own panel, in screen order.
+  // Shiny names inputs "<panel>-<input>" and outputs "<panel>-<output>".
+  function chosen(prefix) {
+    var values = [];
+    document.querySelectorAll('select[id^="' + prefix + '-"]').forEach(function (sel) {
+      // The panel's own inputs only: "<panel>-<input>". A component inside it
+      // (the decimals control is "<panel>-dec-...") says nothing about the chart.
+      if (sel.id.slice(prefix.length + 1).indexOf("-") >= 0) return;
+      if (!visible(sel)) return;
+      Array.prototype.forEach.call(sel.selectedOptions || [], function (opt) {
+        var v = String(opt.value || "").trim();
+        if (!SKIP[v.toLowerCase()] && values.indexOf(v) < 0) values.push(v);
+      });
+    });
+    return values;
+  }
+
+  function clean(text) {
+    return String(text).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  }
+
   function fileName(container, img) {
-    var base = (container.id || "chart").replace(/[^A-Za-z0-9]+/g, "_");
-    var alt = (img && img.getAttribute("alt")) || "";
-    if (alt && !/^plot/i.test(alt)) {
-      base = alt.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || base;
-    }
-    return base + ".png";
+    var id = container.id || "chart";
+    var cut = id.indexOf("-");
+    var prefix = cut > 0 ? id.slice(0, cut) : "";
+    var which = (cut > 0 ? id.slice(cut + 1) : id).replace(/_?plot$/i, "");
+    var parts = [prefix].concat(prefix ? chosen(prefix) : [], [which]);
+    var base = parts.map(clean).filter(Boolean).join("_").slice(0, 100);
+    return (base || "chart") + ".png";
   }
 
   function currentImage(container) {

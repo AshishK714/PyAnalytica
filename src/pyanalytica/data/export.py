@@ -27,10 +27,14 @@ def export_excel(df: pd.DataFrame, path: str) -> CodeSnippet:
     )
 
 
-def to_csv_bytes(df: pd.DataFrame) -> bytes:
-    """Export DataFrame to CSV bytes (for Shiny download)."""
+def to_csv_bytes(df: pd.DataFrame, decimals: int | None = None) -> bytes:
+    """Export DataFrame to CSV bytes (for Shiny download).
+
+    With *decimals*, every decimal number is written with that many places,
+    so a column reads 30679.00, 8762.30, 33042.01 rather than mixing widths.
+    """
     buf = io.BytesIO()
-    df.to_csv(buf, index=False)
+    df.to_csv(buf, index=False, float_format=None if decimals is None else f"%.{decimals}f")
     return buf.getvalue()
 
 

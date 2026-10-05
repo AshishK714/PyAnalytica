@@ -12,7 +12,7 @@ import pandas as pd
 from pyanalytica.analyze.normality import shapiro_wilk_test
 from pyanalytica.analyze.proportions import goodness_of_fit_test
 from pyanalytica.ask._result import (
-    AskResult, Rung, combine_code, fmt, reading_sentence, resolve_kind,
+    AskResult, Rung, and_list, combine_code, fmt, reading_sentence, resolve_kind, tied,
 )
 from pyanalytica.core.codegen import CodeSnippet
 from pyanalytica.visualize.distribute import bar_chart, boxplot, histogram
@@ -138,15 +138,21 @@ def _category(df: pd.DataFrame, col: str, reading: str, second_picture: bool) ->
         imports=["import pandas as pd"],
     )
 
-    top, top_n = str(counts.index[0]), int(counts.iloc[0])
-    sentence = (
-        f"{col} has {len(counts)} categories across {n:,} rows. The most common is "
-        f"{top} ({top_n:,} rows, {top_n / n * 100:.1f}%)"
-    )
-    if len(counts) > 1:
-        low, low_n = str(counts.index[-1]), int(counts.iloc[-1])
-        sentence += f"; the rarest is {low} ({low_n:,} rows, {low_n / n * 100:.1f}%)"
-    sentence += "."
+    def _extreme(which: str, word: str) -> str:
+        labels = tied(counts, which, shown=int)
+        k = int(counts.max() if which == "max" else counts.min())
+        each = " each" if len(labels) > 1 else ""
+        verb = "are" if len(labels) > 1 else "is"
+        return f"{word} {verb} {and_list(labels)} ({k:,} rows{each}, {k / n * 100:.1f}%{each})"
+
+    sentence = f"{col} has {len(counts)} categories across {n:,} rows. "
+    if len(counts) > 1 and counts.max() == counts.min():
+        sentence += f"Every category has {int(counts.max()):,} rows."
+    else:
+        sentence += _extreme("max", "The most common")
+        if len(counts) > 1:
+            sentence += "; " + _extreme("min", "the rarest")
+        sentence += "."
 
     fig, bar_code = bar_chart(df, col)
     answer = Rung(

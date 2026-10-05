@@ -187,3 +187,22 @@ def strength(r: float) -> str:
     if a < 0.7:
         return "strong"
     return "very strong"
+
+
+def tied(values: pd.Series, which: str, shown=fmt) -> list:
+    """Every label at the highest (``which="max"``) or lowest value, as shown.
+
+    Ties are judged on the number the sentence prints: two regions at 17.8%
+    are tied for a reader even if the fourth decimal differs. Naming only
+    the first sent a reader to report one where the table had two.
+    """
+    target = shown(values.max() if which == "max" else values.min())
+    return [label for label, v in values.items() if shown(v) == target]
+
+
+def and_list(items: list[str]) -> str:
+    """"a", "a and b", "a, b and c"."""
+    items = [str(i) for i in items]
+    if len(items) <= 1:
+        return "".join(items)
+    return ", ".join(items[:-1]) + " and " + items[-1]

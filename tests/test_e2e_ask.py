@@ -164,6 +164,28 @@ class TestChartsCanBeDownloaded:
         download.value.save_as(path)
         assert path.suffix == ".png"
         assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n", "not a PNG file"
+        # Named for the panel's choices, so a chart per question is not
+        # "two_variables_answer_plot (7).png".
+        assert download.value.suggested_filename == "two_variables_tip_day_answer.png"
+
+    def test_the_csv_is_named_for_its_table_and_rounded_as_shown(self, page, tmp_path_factory):
+        """Every Two Variables CSV was relate.csv with every digit kept."""
+        _nav_to(page, "Relate", "Two Variables")
+        _wait_stable(page, 1500)
+        _select_option(page, _sid(MOD2, "y"), "tip")
+        _select_option(page, _sid(MOD2, "x"), "day")
+        _select_option(page, _sid(MOD2, "color_by"), "")
+        _click_button(page, _sid(MOD2, "run_btn"))
+        _wait_stable(page, 4000)
+        with page.expect_download(timeout=15_000) as download:
+            page.locator(f"#{MOD2}-dl-dl_btn").click()
+        assert download.value.suggested_filename == "tip_by_day.csv"
+        path = tmp_path_factory.mktemp("csv") / "t.csv"
+        download.value.save_as(path)
+        rows = [line.split(",") for line in path.read_text(encoding="utf-8").splitlines()]
+        places = {len(cell.split(".")[1]) for row in rows[1:] for cell in row
+                  if "." in cell and cell.replace(".", "", 1).replace("-", "", 1).isdigit()}
+        assert places == {4}, rows
 
     def test_a_panel_outside_the_guided_ones_has_it_too(self, page):
         _nav_to(page, "Advanced", "Scatter")
