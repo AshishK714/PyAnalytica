@@ -117,7 +117,7 @@ def create_pivot_table(
 
 
 def label_columns(
-    result: pd.DataFrame, columns: str | None, snippet: CodeSnippet,
+    result: pd.DataFrame, columns: str | None, snippet: CodeSnippet, name: str = "result",
 ) -> tuple[pd.DataFrame, CodeSnippet]:
     """Name the column variable in every column: "smoker = yes", not "yes".
 
@@ -125,10 +125,11 @@ def label_columns(
     left the panel -- into a report, a download -- nothing else did either.
     Applied by the Pivot panel, with the same line added to its shown code;
     ``create_pivot_table`` itself keeps pandas' column labels, which callers
-    index by.
+    index by. ``name`` is the variable the shown code leaves the table in
+    (Cross-tab's code calls it ``ct``).
     """
     if not columns:
         return result, snippet
     labelled = result.rename(columns=lambda c: c if c == "All" else f"{columns} = {c}")
-    line = f'result = result.rename(columns=lambda c: c if c == "All" else f"{columns} = {{c}}")'
+    line = f'{name} = {name}.rename(columns=lambda c: c if c == "All" else f"{columns} = {{c}}")'
     return labelled, CodeSnippet(code=f"{snippet.code}\n{line}", imports=snippet.imports)

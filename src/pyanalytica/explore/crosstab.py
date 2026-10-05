@@ -137,12 +137,12 @@ def create_crosstab(
     if p_value < 0.05:
         interpretation = (
             f"There is a statistically significant association between "
-            f"{row_var} and {col_var}, \u03c7\u00b2({dof}) = {chi2:.1f}, {p_str}."
+            f"{row_label} and {col_label}, \u03c7\u00b2({dof}) = {chi2:.1f}, {p_str}."
         )
     else:
         interpretation = (
             f"There is no statistically significant association between "
-            f"{row_var} and {col_var}, \u03c7\u00b2({dof}) = {chi2:.1f}, {p_str}."
+            f"{row_label} and {col_label}, \u03c7\u00b2({dof}) = {chi2:.1f}, {p_str}."
         )
 
     # Code generation

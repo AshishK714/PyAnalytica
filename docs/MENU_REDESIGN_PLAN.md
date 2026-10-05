@@ -27,6 +27,11 @@ Decided by the instructor:
   checks, one interval or test; no models). Until the project is due, the
   app gets bug fixes and one addition only: a **Download PNG** button on every
   chart (0.10.5), so charts can go into the Word template. No menu moves.
+  0.10.6 fixes what a student-style run of the project found (log in
+  `MSTM_F_26/Week_6/FPF_app_test_0.10.5/`, a worked solution, not for
+  learners): a rate chart with group sizes for a category outcome, rows-used
+  wording, the bimodal shape sentence, Welch's df, the proportion difference
+  order, Cross-tab labels, and Profile's missing counts.
 - **Model and Report work is on hold.** Neither assignment needs it. Every
   finding below whose work package touches Model or Report is marked
   *deferred: Model/Report hold* in the tracker and is not part of Stage 1 or
@@ -431,13 +436,21 @@ says where it would fit. Nothing here is scheduled until moved into a stage.
 |---|---|
 | Open sections are sent to the report silently: a section opened once stays open on later answers and its chart goes into the next Add to Report. Options: close sections on a new answer, or list what will be sent before adding | Stage 1, WP 1.9 (small) |
 | The density view (hexbin) ignores Colour by: it pools both groups under a scatter that splits them | Stage 1, with the chart fixes; or Stage 3's chart component |
-| "Percentages of all rows" chart uses a different base from the row-percent table beside it | Stage 1 labels, or chart it as % of row |
 | Tables are misaligned inside Report Builder's editor (the export is fine) | Deferred: Model/Report hold |
 | Two shades of the second colour (light in histograms and scatters, dark in boxes and bars) | Stage 3 chart component (one palette with one alpha rule) |
 | Data > Load says "rows 1 through 12 of 100" for a 1,338-row file: the preview shows the first 100 rows and does not say so | Stage 1 labels |
 | Pivot's empty choice reads "(None)", Cross-tab's "(None)", Normalize's "None"; everywhere else "(none)" | Stage 1 labels |
 | The printed PDF has many part-blank pages | Deferred: Model/Report hold |
 | Inside a report cell the table comes before the chart (same order as the screen) | Deferred: Model/Report hold; revisit with the report outline (S13) |
+
+### From the project run (0.10.5) and not fixed
+
+| Item | Where it fits |
+|---|---|
+| Ordered categories (Very Low, Low, High, Very High; High School, Bachelors, Masters) are shown in alphabetical order in tables, legends and charts. Needs a way to set a category order once (Transform) that every panel respects | Stage 1, with the type system (WP 1.1) |
+| CSV downloads carry full precision while the screen rounds, so "37" sits next to "36.9" in a learner's write-up | Stage 1 labels and decimals (D5) |
+| Text columns that hold numbers with a "%" or "$" are listed as categorical, with no hint. The conversion message, once tried, is clear | Stage 1, type system: flag "looks numeric" in Profile and the picker |
+| "Treat as Number" on a text column refuses (correctly) but replaces the previous answer with the intro guide | Stage 1, WP 1.9 (keep the last answer on a refusal) |
 
 ### Ideas raised in discussion
 

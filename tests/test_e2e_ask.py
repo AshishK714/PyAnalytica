@@ -193,8 +193,14 @@ class TestUploadLoadsOnChoose:
         page.locator(f"{_sid('load', 'source')} input[type=radio][value='upload']").first.check()
         _wait_stable(page, 1200)
         page.locator(_sid("load", "file_upload")).set_input_files(str(csv))
-        _wait_stable(page, 4000)
-        info = page.locator(_sid("load", "load_info")).inner_text()
+        # Wait for the load rather than a fixed time: under the full suite's
+        # load a fixed 4 s was once too short and read the previous dataset.
+        info_box = page.locator(_sid("load", "load_info"))
+        deadline = time.time() + 20
+        info = info_box.inner_text()
+        while "3 rows" not in info and time.time() < deadline:
+            page.wait_for_timeout(500)
+            info = info_box.inner_text()
         assert "3 rows" in info, info
         status = page.locator(_sid("load", "status-panel_status")).inner_text()
         assert "choose_loads" in status, status

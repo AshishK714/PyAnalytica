@@ -30,6 +30,13 @@
 >
 > **0.10.5 (4 October)** adds a **Download PNG** button at the top right of
 > every chart, for putting charts into a report written outside the app.
+>
+> **0.10.6 (5 October)** follows a project run on 0.10.5: two-category
+> answers chart the rate per group with n on each bar (counts move to the
+> second picture) and the table gains an n column; Two Variables says how
+> many rows blanks left out; One Variable names two peaks instead of calling
+> them symmetric; Welch's t-test prints Welch's df; the two-proportion
+> difference names its order; Cross-tab and Profile labels fixed.
 
 Written 2 October 2026 for the next session, which will work through a
 nine-question visualization assignment in the app and report every point of
@@ -85,7 +92,7 @@ types pick the analysis:
 |---|---|---|---|---|---|
 | number | category | group table (count, mean, median, std), boxplots | bar of means with 95% CI | two-sample t-test for 2 groups, one-way ANOVA above, assumption lines | regression on group dummies: the same means as coefficients |
 | number | number | n, r, r², slope, intercept; scatter with fitted line | hexbin | Pearson correlation test with CI | the fitted line as an equation |
-| category | category | row-percent cross-tab, grouped count bars | percent-of-all bars | chi-square with Cramer's V, sparse-cell warning | pointer to Model > Classify |
+| category | category | row-percent cross-tab with n, rate bars with n (0.10.6) | counts | chi-square with Cramer's V, sparse-cell warning | pointer to Model > Classify |
 | category | number | read the other way round, roles swapped, sentence says so | | | pointer to Model > Classify |
 
 - The sentence always names the cell that stands out and states how each

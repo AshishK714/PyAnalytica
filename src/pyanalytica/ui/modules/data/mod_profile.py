@@ -14,7 +14,11 @@ from pyanalytica.ui.components.decimals_control import decimals_server, decimals
 def profile_ui():
     return ui.layout_sidebar(
         ui.sidebar(
-            ui.p("Select a dataset to see its profile."),
+            ui.p(
+                "This profiles the active dataset, the one chosen in Data > Load. "
+                "It follows whichever dataset is active; press Refresh if it looks "
+                "out of date after a change."
+            ),
             ui.input_action_button("refresh", "Refresh Profile", class_="btn-outline-primary w-100"),
             width=300,
         ),
@@ -54,12 +58,13 @@ def profile_server(input, output, session, state: WorkbenchState, get_current_df
                     ui.tags.td(cp.name),
                     ui.tags.td(cp.dtype),
                     ui.tags.td(cp.column_type.value),
+                    ui.tags.td(f"{p.shape[0] - cp.non_null_count:,}"),
                     ui.tags.td(f"{cp.non_null_pct}%"),
                     ui.tags.td(str(cp.unique_count)),
                 ) for cp in p.column_profiles],
                 ui.tags.thead(ui.tags.tr(
                     ui.tags.th("Column"), ui.tags.th("Dtype"), ui.tags.th("Type"),
-                    ui.tags.th("Non-null"), ui.tags.th("Unique"),
+                    ui.tags.th("Missing"), ui.tags.th("Non-null"), ui.tags.th("Unique"),
                 )),
                 class_="table table-sm table-striped",
             ),
@@ -73,10 +78,15 @@ def profile_server(input, output, session, state: WorkbenchState, get_current_df
 
         if flags.missing_columns:
             items.append(ui.h5("Missing Values"))
-            rows = [ui.tags.tr(ui.tags.td(col), ui.tags.td(f"{pct}%"))
+            # A count as well as a share: "3,088 of 5,000" is what a write-up
+            # needs when it says how many rows an analysis dropped.
+            missing_n = {cp.name: p.shape[0] - cp.non_null_count for cp in p.column_profiles}
+            rows = [ui.tags.tr(ui.tags.td(col), ui.tags.td(f"{missing_n.get(col, 0):,}"),
+                               ui.tags.td(f"{pct}%"))
                     for col, pct in flags.missing_columns]
             items.append(ui.tags.table(
-                ui.tags.thead(ui.tags.tr(ui.tags.th("Column"), ui.tags.th("% Missing"))),
+                ui.tags.thead(ui.tags.tr(ui.tags.th("Column"), ui.tags.th("Missing"),
+                                         ui.tags.th("% Missing"))),
                 *rows, class_="table table-sm",
             ))
 
@@ -99,6 +109,7 @@ def profile_server(input, output, session, state: WorkbenchState, get_current_df
         for cp in p.column_profiles:
             row = {
                 "Column": cp.name, "Type": cp.column_type.value,
+                "Missing": p.shape[0] - cp.non_null_count,
                 "Non-null %": cp.non_null_pct, "Unique": cp.unique_count,
                 "Mean": cp.mean, "Median": cp.median,
                 "Std": cp.std, "Min": cp.min_val, "Max": cp.max_val,

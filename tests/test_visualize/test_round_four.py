@@ -43,7 +43,7 @@ def _rotation(ax) -> float:
 @pytest.mark.parametrize("make,expected", [
     (lambda d: relate_two(d, "charges", "region"), "Bar chart of means"),
     (lambda d: relate_two(d, "charges", "age"), "Density view (hexbin)"),
-    (lambda d: relate_two(d, "smoker", "region"), "Percentages of all rows"),
+    (lambda d: relate_two(d, "smoker", "region"), "Counts"),
     (lambda d: describe_one(d, "charges"), "Boxplot"),
     (lambda d: describe_one(d, "smoker"), "Percentages"),
 ])

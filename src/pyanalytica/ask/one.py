@@ -58,14 +58,7 @@ def _number(df: pd.DataFrame, col: str, reading: str, second_picture: bool) -> A
     )
 
     mean, median = clean.mean(), clean.median()
-    if median and abs(mean - median) / (abs(median) + 1e-12) > 0.1:
-        shape = (
-            " The mean sits above the median, so a tail of high values pulls it up."
-            if mean > median else
-            " The mean sits below the median, so a tail of low values pulls it down."
-        )
-    else:
-        shape = " Mean and median are close, so the values are roughly symmetric."
+    shape = shape_sentence(clean)
     sentence = (
         f"{col} ranges from {fmt(clean.min())} to {fmt(clean.max())}, with a median "
         f"of {fmt(median)} and a mean of {fmt(mean)} across {len(clean):,} values"
@@ -211,3 +204,67 @@ def _category(df: pd.DataFrame, col: str, reading: str, second_picture: bool) ->
         code=combine_code([answer, picture, test]),
         description=f"Describe {col}",
     )
+
+
+def find_peaks(values: pd.Series, min_height: float = 0.2, max_dip: float = 0.6) -> list[float]:
+    """Where a smoothed histogram (a kernel density) has separate humps.
+
+    A hump counts if it reaches ``min_height`` of the tallest one, and two
+    humps count as separate only if the density between them falls below
+    ``max_dip`` of the lower hump. Columns with few distinct values (counts,
+    codes) and small samples return [] because a smooth curve says little
+    about them.
+    """
+    import numpy as np
+    from scipy.stats import gaussian_kde
+
+    v = np.asarray(values, dtype=float)
+    v = v[np.isfinite(v)]
+    if len(v) > 5000:
+        v = np.random.default_rng(0).choice(v, 5000, replace=False)
+    if len(v) < 50 or np.ptp(v) == 0 or len(np.unique(v)) < 10:
+        return []
+    grid = np.linspace(v.min(), v.max(), 512)
+    try:
+        d = gaussian_kde(v)(grid)
+    except Exception:  # singular data
+        return []
+    top = d.max()
+    tops = [i for i in range(1, len(d) - 1)
+            if d[i] >= d[i - 1] and d[i] > d[i + 1] and d[i] >= min_height * top]
+    kept: list[int] = []
+    for i in tops:
+        if kept:
+            j = kept[-1]
+            if d[j:i + 1].min() > max_dip * min(d[i], d[j]):
+                if d[i] > d[j]:
+                    kept[-1] = i
+                continue
+        kept.append(i)
+    return [float(grid[i]) for i in kept]
+
+
+def shape_sentence(clean: pd.Series) -> str:
+    """One sentence on the shape: separate peaks, a tail, or roughly symmetric.
+
+    Peaks come first because mean against median cannot see them: two humps
+    of different sizes can put the mean near the median.
+    """
+    peaks = find_peaks(clean)
+    if len(peaks) >= 2:
+        where = ", ".join(fmt(p) for p in peaks[:-1]) + f" and {fmt(peaks[-1])}"
+        return (
+            f" The histogram has {len(peaks)} separate peaks, near {where}, so the "
+            "values fall into groups and the mean and median describe neither group "
+            "well. Look for a column that separates them."
+        )
+    skew = clean.skew() if len(clean) > 2 else 0.0
+    mean, median = clean.mean(), clean.median()
+    if pd.notna(skew) and abs(skew) >= 0.5:
+        side = "high" if skew > 0 else "low"
+        where = "above" if mean > median else "below" if mean < median else "at"
+        return (
+            f" Skewness is {fmt(skew)}: a tail of {side} values, with the mean "
+            f"{where} the median."
+        )
+    return " Mean and median are close and skewness is small, so the values are roughly symmetric."

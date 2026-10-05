@@ -160,7 +160,10 @@ def test_colour_by_on_a_scatter_gives_r_within_each_group(df):
 def test_colour_by_on_two_categories_nests_the_table(df):
     r = relate_two(df, "type", "state", color_by="grad_rate", second_picture=True)
     assert r.answer.table.columns[0] == "grad_rate"
-    assert 'col="grad_rate"' in r.answer.code.code
+    assert r.answer.table.columns[2] == "n"
+    # The rate chart puts the colour beside the bars; the counts get a panel each.
+    assert "hue='grad_rate'" in r.answer.code.code
+    assert 'col="grad_rate"' in r.picture.code.code
     _run(r.code.code, df)
 
 

@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.6] - 2026-10-05
+
+A student-style run of a conference-report project (5,000 rows, a yes/no
+outcome, a salary recorded only for the employed) on 0.10.5 found no
+blockers. These are the findings it needs fixed; the cosmetic ones are in the
+plan's parking lot.
+
+- **Two categories: the chart shows the rate, with group sizes.** Relate >
+  Two Variables with a category Y and a category X drew grouped *counts*,
+  which hid the rate the sentence reported whenever the groups differed in
+  size (637 against 4,363). The answer now charts the percentage of each
+  group with the outcome, one bar per Colour-by level beside it, each
+  labelled with its rate and n. With more than two outcome levels it is a
+  100% stacked bar per group, n under each name. The counts moved to the
+  second picture, now called "Counts" (it was "Percentages of all rows",
+  whose base differed from the table's). `visualize.compare.rate_chart`
+  draws it by running its own shown code.
+- **The row-percent table has an n column**, so "Masters, No" reads as 182
+  people. The test section's count table names the outcome in its headers.
+- **Two Variables says how many rows it used** when blanks left some out:
+  "This uses 1,912 of 5,000 rows: 3,088 with salary blank are left out, so it
+  describes only rows where salary is recorded."
+- **One Variable sees two humps.** The shape sentence said "roughly
+  symmetric" for a score with peaks near 60 and 85, beside a histogram that
+  showed both. It now finds separate peaks in a smoothed histogram first and
+  says so; otherwise it uses skewness (0.5 or more is a tail) instead of the
+  mean-to-median gap, which missed this case at 9%.
+- **Welch's t-test reports Welch's degrees of freedom**, t(4288.2), not
+  n1 + n2 - 2. The assumption line already said the df would not be a whole
+  number. The shown code computes it.
+- **The two-proportion difference names its order**: "Difference (No minus
+  Yes)", with the flipped version beside it. Groups are taken
+  alphabetically, which made a positive effect read as negative.
+- **Cross-tab** wrote "between ['mentorship'] and employed"; it now uses the
+  names. Its headers name the column variable ("employed = Yes"), as Pivot's
+  do.
+- **Data > Profile** gives missing values as counts as well as percentages,
+  and its sidebar no longer asks for a dataset while showing one.
+
 ## [0.10.5] - 2026-10-04
 
 - **A Download PNG button on every chart.** Learners put charts into reports

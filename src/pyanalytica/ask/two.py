@@ -6,7 +6,7 @@ The two column types pick the analysis, the way JMP's "Fit Y by X" does:
 |----------|----------|-----------------------|-----------------|----------------------|--------------------|
 | number   | category | group means           | boxplots        | t-test or ANOVA      | regression on dummies |
 | number   | number   | r, slope              | scatter + line  | correlation test     | fitted line        |
-| category | category | row percentages       | grouped bars    | chi-square           | pointer to Classify |
+| category | category | row percentages, n    | rate per group  | chi-square           | pointer to Classify |
 | category | number   | read as number by category, roles swapped, pointer to Classify |
 
 The student never has to know the test's name first; the panel says which it
@@ -29,7 +29,7 @@ from pyanalytica.core.codegen import CodeSnippet
 from pyanalytica.core.types import MAX_GROUPABLE_LEVELS
 from pyanalytica.explore.crosstab import create_crosstab
 from pyanalytica.explore.summarize import group_summarize
-from pyanalytica.visualize.compare import bar_of_means, grouped_boxplot
+from pyanalytica.visualize.compare import bar_of_means, grouped_boxplot, rate_chart
 from pyanalytica.visualize.distribute import bar_chart
 from pyanalytica.visualize.relate import hexbin, scatter
 
@@ -100,6 +100,26 @@ def relate_two(
                                  second_picture=second_picture)
 
 
+def _coverage(df: pd.DataFrame, cols: list[str | None]) -> str:
+    """Say how many rows the answer used when blanks left some out.
+
+    A salary comparison on 1,912 of 5,000 rows describes the employed only;
+    the n column was the one clue, and a reader took the means as true of
+    everyone.
+    """
+    cols = [c for c in dict.fromkeys(cols) if c]
+    used = int(df[cols].notna().all(axis=1).sum())
+    left_out = len(df) - used
+    if not left_out:
+        return ""
+    blank = [c for c in cols if df[c].isna().any()]
+    which = " or ".join(blank)
+    return (
+        f" This uses {used:,} of {len(df):,} rows: {left_out:,} with {which} blank "
+        f"are left out, so it describes only rows where {which} is recorded."
+    )
+
+
 def _label(index_value) -> str:
     """A group name, whether the index is one level or several."""
     if isinstance(index_value, tuple):
@@ -150,7 +170,7 @@ def _number_by_category(
     sentence = (
         f"Mean {num} is highest for {where} = {_label(hi)} ({fmt(means[hi])}) and lowest for "
         f"{where} = {_label(lo)} ({fmt(means[lo])}), a gap of {fmt(means[hi] - means[lo])}."
-    )
+    ) + _coverage(df, [num, cat, color])
     # One order everywhere on the screen: the table is in name order, so the
     # boxplot and the bars are too. Three orders for the same groups on one
     # screen made a reader match bars to the wrong rows.
@@ -318,7 +338,7 @@ def _number_by_number(
         sentence = (
             f"Overall r = {r:.2f} across {n:,} rows. Within each {color} group: {within}. "
             f"Where those differ from the overall figure, the group is doing part of the work."
-        )
+        ) + _coverage(df, [x, y])
     else:
         table = pd.DataFrame({
             "statistic": ["n", "Pearson r", "r squared", "slope", "intercept"],
@@ -340,7 +360,7 @@ def _number_by_number(
             f"A {strength(r)} {direction} relationship: r = {r:.2f} across {n:,} rows. "
             f"On average {y} {verb} by {fmt(abs(slope))} for each one-unit increase in {x}. "
             f"The line explains {r * r * 100:.0f}% of the variation in {y}."
-        )
+        ) + _coverage(df, [x, y])
     fig, scatter_code = scatter(df, x, y, color_by=color, trend_line=True)
     answer = Rung(
         title="Describe",
@@ -453,24 +473,33 @@ def _category_by_category(
     sentence = (
         f"The share of {y} = {outcome} ranges from {col.min():.1f}% ({where} = {_label(col.idxmin())}) "
         f"to {col.max():.1f}% ({where} = {_label(col.idxmax())}) across the {where} groups."
-    )
+    ) + _coverage(df, [x, y, color])
     # Each outcome column names its variable and what the number is: "no /
     # yes" alone did not say it meant smoker, nor that rows add to 100.
     def _label_outcome(level) -> str:
         return f"{y} = {level} (% of row)"
 
-    table = pct.rename(columns=_label_outcome).reset_index()
-    table.columns = [str(c) for c in table.columns]
     rows_expr = f'[df["{color}"], df["{x}"]]' if color else f'df["{x}"]'
+    # Each group's size beside its percentages: "Masters, No" is 182 people
+    # and "High School, Yes" 2,072, which percentages alone do not say.
+    sizes = pd.crosstab(
+        [df[color], df[x]] if color else df[x], df[y]
+    ).sum(axis=1)
+    table = pct.rename(columns=_label_outcome)
+    table.insert(0, "n", sizes.reindex(table.index))
+    table = table.reset_index()
+    table.columns = [str(c) for c in table.columns]
     table_code = CodeSnippet(
         code=(
             f'result = (pd.crosstab({rows_expr}, df["{y}"], normalize="index") * 100).round(1)\n'
-            f'result = result.rename(columns=lambda level: f"{y} = {{level}} (% of row)")'
+            f'result = result.rename(columns=lambda level: f"{y} = {{level}} (% of row)")\n'
+            f'result.insert(0, "n", pd.crosstab({rows_expr}, df["{y}"]).sum(axis=1))'
         ),
         imports=["import pandas as pd"],
     )
-    # Name order, as the table beside it is; by count, the two disagreed.
-    fig, bar_code = bar_chart(df, x, group_by=y, facet_col=color, sort=False)
+    # The rate per group, which is what the sentence and the table report.
+    # Count bars hid it when the groups differed in size.
+    fig, bar_code = rate_chart(df, x, y, event=outcome if pct.shape[1] == 2 else None, hue=color)
     answer = Rung(
         title="Describe",
         sentence=sentence,
@@ -480,18 +509,25 @@ def _category_by_category(
             code=table_code.code + "\n\n" + bar_code.code,
             imports=sorted(set(table_code.imports + bar_code.imports)),
         ),
-        notes=[f"Each row of the table adds to 100: the percentages are of that {x} group."],
+        notes=[
+            f"The percentages in each row add to 100: they are of that {x} group, "
+            f"whose size is n."
+        ],
     )
 
+    # Name order, as the table is; by count, the two disagreed.
     if second_picture:
-        pct_fig, pct_code = bar_chart(df, x, group_by=y, pct=True, facet_col=color, sort=False)
+        count_fig, count_code = bar_chart(df, x, group_by=y, facet_col=color, sort=False)
     else:
-        pct_fig, pct_code = None, bar_chart(df, x, group_by=y, pct=True, facet_col=color, sort=False)[1]
+        count_fig, count_code = None, bar_chart(df, x, group_by=y, facet_col=color, sort=False)[1]
     picture = Rung(
-        title="Percentages of all rows",
-        sentence="The same split as percentages of all rows, so bars can be compared across panels.",
-        figure=pct_fig,
-        code=pct_code,
+        title="Counts",
+        sentence=(
+            "The number of rows in each group, split by the outcome. Read the rates "
+            "above, and this to see which groups are small."
+        ),
+        figure=count_fig,
+        code=count_code,
     )
 
     try:
@@ -510,7 +546,8 @@ def _category_by_category(
         test = Rung(
             title="Test: could the association be chance?",
             sentence=chi.interpretation,
-            table=chi.observed.reset_index(),
+            # Name the outcome in each header, as the table above does.
+            table=chi.observed.rename(columns=lambda level: f"{y} = {level}").reset_index(),
             code=chi.code,
             notes=notes,
         )

@@ -269,6 +269,118 @@ def bar_of_means(
     )
 
 
+#: Above this many bars, labelling each one with its rate and size crowds
+#: the chart; the table beside it has both numbers.
+MAX_LABELLED_BARS = 24
+
+
+def _py(value):
+    """A numpy scalar as a plain Python value, so its repr is valid code."""
+    return value.item() if hasattr(value, "item") else value
+
+
+def rate_chart(
+    df: pd.DataFrame, x: str, y: str, event=None, hue: str | None = None,
+) -> tuple[Figure, CodeSnippet]:
+    """The share of each group with an outcome: a chart of rates, not counts.
+
+    With a two-level outcome (yes/no, employed or not) each bar is the
+    percentage of an ``x`` group with ``y == event``, one bar per ``hue``
+    level beside it, labelled with the rate and the group's size. Counts
+    hide the rate when groups differ in size (637 against 4,363), which is
+    the comparison a two-category question asks about. With more outcome
+    levels each group gets a 100% stacked bar, its size under its name.
+
+    The figure is drawn by running the shown code, so the two cannot differ.
+    """
+    levels = sorted(df[y].dropna().unique(), key=str)
+    two = len(levels) == 2
+    if two:
+        if event is None or event not in levels:
+            event = df[y].value_counts().idxmin()
+        event = _py(event)
+        keys = [x, hue] if hue else [x]
+        subset = [x, y] + ([hue] if hue else [])
+        n_bars = int(df.dropna(subset=subset).groupby(keys, observed=True).ngroups)
+        label = f"% with {y} = {event}"
+        title = f"{label}, by {x}" + (f", split by {hue}" if hue else "")
+        lines = [
+            f"data = df.dropna(subset={subset!r})",
+            "rates = (",
+            f"    data.assign(event=data[{y!r}].eq({event!r}) * 100)",
+            f"    .groupby({keys!r}, observed=True)",
+            '    .agg(rate=("event", "mean"), n=("event", "size"))',
+            "    .reset_index()",
+            ")",
+            f"order = sorted(rates[{x!r}].unique())",
+            "fig, ax = plt.subplots(figsize=(10, 6))",
+        ]
+        if hue:
+            lines += [
+                f"hue_order = sorted(rates[{hue!r}].unique())",
+                f"sns.barplot(data=rates, x={x!r}, y=\"rate\", hue={hue!r}, order=order,",
+                "            hue_order=hue_order, errorbar=None, ax=ax)",
+            ]
+            if n_bars <= MAX_LABELLED_BARS:
+                lines += [
+                    "for bars, level in zip(ax.containers, hue_order):",
+                    f"    part = rates[rates[{hue!r}] == level].set_index({x!r}).reindex(order)",
+                    '    ax.bar_label(bars, labels=["" if pd.isna(n) else f"{r:.1f}%\\nn={n:,.0f}"',
+                    '                              for r, n in zip(part["rate"], part["n"])], fontsize=9)',
+                ]
+            lines.append(AXES_CODE.rstrip("\n"))
+        else:
+            lines += [
+                f"sns.barplot(data=rates, x={x!r}, y=\"rate\", order=order, errorbar=None, ax=ax)",
+            ]
+            if n_bars <= MAX_LABELLED_BARS:
+                lines += [
+                    f"part = rates.set_index({x!r}).reindex(order)",
+                    'ax.bar_label(ax.containers[0], labels=[f"{r:.1f}%\\nn={n:,.0f}"',
+                    '                                       for r, n in zip(part["rate"], part["n"])], fontsize=9)',
+                ]
+        lines += [
+            "ax.margins(y=0.15)",
+            f"ax.set_ylabel({label!r})",
+            f"ax.set_title({title!r})",
+        ]
+        n_ticks = int(df[x].nunique())
+        long = max((len(str(v)) for v in df[x].dropna().unique()), default=0)
+    else:
+        index = f"[df[{hue!r}], df[{x!r}]]" if hue else f"df[{x!r}]"
+        title = f"{y} within each {x} group" + (f", split by {hue}" if hue else "") + " (% of group)"
+        lines = [
+            f"pct = pd.crosstab({index}, df[{y!r}], normalize=\"index\") * 100",
+            f"sizes = pd.crosstab({index}, df[{y!r}]).sum(axis=1)",
+            "names = [\", \".join(map(str, k)) if isinstance(k, tuple) else str(k) for k in pct.index]",
+            'pct.index = [f"{name}\\n(n={n:,})" for name, n in zip(names, sizes)]',
+            "fig, ax = plt.subplots(figsize=(10, 6))",
+            "pct.plot(kind=\"bar\", stacked=True, width=0.8, ax=ax)",
+            AXES_CODE.rstrip("\n"),
+            "ax.set_xlabel(" + repr(f"{hue} / {x}" if hue else x) + ")",
+            'ax.set_ylabel("% of group")',
+            f"ax.set_title({title!r})",
+        ]
+        groups = df.dropna(subset=[x] + ([hue] if hue else []))
+        n_ticks = int(groups.groupby([hue, x] if hue else [x], observed=True).ngroups)
+        long = max((len(str(v)) for v in df[x].dropna().unique()), default=0) + (
+            max((len(str(v)) for v in df[hue].dropna().unique()), default=0) + 2 if hue else 0
+        )
+    rotate = n_ticks > 6 or long > 12
+    lines.append('plt.xticks(rotation=45, ha="right")' if rotate else "plt.xticks(rotation=0)")
+    lines += ["plt.tight_layout()", "plt.show()"]
+    code = "\n".join(lines)
+
+    ns = {"df": df, "pd": pd, "np": np, "plt": plt, "sns": sns}
+    exec(code.replace("plt.tight_layout()\nplt.show()", ""), ns)
+    fig = ns["fig"]
+    fig.set_layout_engine("tight", pad=1.5)
+    return fig, CodeSnippet(
+        code=code,
+        imports=["import matplotlib.pyplot as plt", "import pandas as pd", "import seaborn as sns"],
+    )
+
+
 def strip_plot(
     df: pd.DataFrame, x_cat: str, y_num: str,
     hue: str | None = None,

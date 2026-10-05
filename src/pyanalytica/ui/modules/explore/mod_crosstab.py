@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 from shiny import module, reactive, render, req, ui
 
 from pyanalytica.core import round_df
 from pyanalytica.core.state import WorkbenchState
 from pyanalytica.core.types import get_groupable_columns
 from pyanalytica.explore.crosstab import create_crosstab
+from pyanalytica.explore.pivot import label_columns
 from pyanalytica.ui.components.code_panel import code_panel_server, code_panel_ui
 from pyanalytica.ui.components.table_caption import table_caption
 from pyanalytica.ui.components.decimals_control import decimals_server, decimals_ui
@@ -70,6 +73,11 @@ def crosstab_server(input, output, session, state: WorkbenchState, get_current_d
 
         normalize = input.normalize() or None
         ct_result = create_crosstab(df, row, col_var=col or None, normalize=normalize, margins=input.margins())
+        if col:
+            # Name the column variable in each header ("employed = Yes"), as
+            # Pivot does: the values alone did not say which variable they were.
+            table, snippet = label_columns(ct_result.table, col, ct_result.code, name="ct")
+            ct_result = dataclasses.replace(ct_result, table=table, code=snippet)
         last_desc.set(
             f"Cross-tab: {', '.join(row)} by {col}" if col
             else f"Frequency table: {', '.join(row)}"

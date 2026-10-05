@@ -237,7 +237,13 @@ def two_proportion_ztest(
             f"significantly between {g1_label} ({p1:.3f}) and {g2_label} ({p2:.3f}), "
             f"z = {z:.2f}, {p_str}."
         )
-    interp += f" Difference: {diff:.3f}, 95% CI: ({ci[0]:.3f}, {ci[1]:.3f})."
+    # Name the order: the groups are taken alphabetically, so "No minus Yes"
+    # came out negative for a claim a reader states as "Yes minus No".
+    interp += (
+        f" Difference ({g1_label} minus {g2_label}): {diff:.3f}, 95% CI: "
+        f"({ci[0]:.3f}, {ci[1]:.3f}). For {g2_label} minus {g1_label}, change "
+        f"the signs and swap the ends: {-diff:.3f}, ({-ci[1]:.3f}, {-ci[0]:.3f})."
+    )
 
     code = (
         f'from scipy import stats\n'
@@ -251,7 +257,8 @@ def two_proportion_ztest(
         f'se = np.sqrt(p_pool * (1 - p_pool) * (1/n1 + 1/n2))\n'
         f'z = (x1/n1 - x2/n2) / se\n'
         f'p_val = 2 * stats.norm.sf(abs(z))  # two-sided\n'
-        f'print(f"z = {{z:.4f}}, p = {{p_val:.4f}}, p1 = {{x1/n1:.4f}}, p2 = {{x2/n2:.4f}}")'
+        f'print(f"z = {{z:.4f}}, p = {{p_val:.4f}}, p1 = {{x1/n1:.4f}}, p2 = {{x2/n2:.4f}}")\n'
+        f'print(f"difference ({g1_label} minus {g2_label}) = {{x1/n1 - x2/n2:.4f}}")'
     )
 
     return TwoPropResult(

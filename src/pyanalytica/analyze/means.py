@@ -150,7 +150,16 @@ def two_sample_ttest(
 
     sig = "significantly " if p_val < 0.05 else "not significantly "
     welch = " (Welch's)" if not equal_var else ""
-    df_val = len(g1) + len(g2) - 2
+    if equal_var:
+        df_val = len(g1) + len(g2) - 2
+        df_txt = f"{df_val}"
+    else:
+        # Welch-Satterthwaite: the df that goes with the unpooled standard
+        # error. Printing n1 + n2 - 2 beside "Welch's" contradicts the
+        # assumption line, which says the df is not a whole number.
+        v1, v2 = np.var(g1, ddof=1) / len(g1), np.var(g2, ddof=1) / len(g2)
+        df_val = (v1 + v2) ** 2 / (v1 ** 2 / (len(g1) - 1) + v2 ** 2 / (len(g2) - 1))
+        df_txt = f"{df_val:.1f}"
     if alternative == "less":
         comparison = "lower than"
     elif alternative == "greater":
@@ -160,7 +169,7 @@ def two_sample_ttest(
     interp = (
         f"The mean {value_col} for {g1_name} ({np.mean(g1):.2f}) is {sig}"
         f"{comparison} {g2_name} ({np.mean(g2):.2f}), "
-        f"t({df_val}) = {t_stat:.2f}{welch}, "
+        f"t({df_txt}) = {t_stat:.2f}{welch}, "
         f"{_fmt_p(p_val)}, d = {abs(d):.2f}."
     )
 
@@ -171,8 +180,17 @@ def two_sample_ttest(
         f'g1 = df[df["{group_col}"] == "{g1_name}"]["{value_col}"].dropna()\n'
         f'g2 = df[df["{group_col}"] == "{g2_name}"]["{value_col}"].dropna()\n'
         f't_stat, p_val = stats.ttest_ind(g1, g2, equal_var={eq_str}{alt_str})\n'
-        f'print(f"t = {{t_stat:.3f}}, p = {{p_val:.4f}}")'
     )
+    if equal_var:
+        code += 'dof = len(g1) + len(g2) - 2\n'
+    else:
+        code += (
+            '# Welch-Satterthwaite degrees of freedom (not a whole number)\n'
+            'v1, v2 = g1.var() / len(g1), g2.var() / len(g2)\n'
+            'dof = (v1 + v2) ** 2 / (v1 ** 2 / (len(g1) - 1) + v2 ** 2 / (len(g2) - 1))\n'
+        )
+    dof_fmt = "{dof}" if equal_var else "{dof:.1f}"
+    code += 'print(f"t(' + dof_fmt + ') = {t_stat:.3f}, p = {p_val:.4f}")'
 
     return MeansTestResult(
         test_name=f"Two-sample t-test{welch}",

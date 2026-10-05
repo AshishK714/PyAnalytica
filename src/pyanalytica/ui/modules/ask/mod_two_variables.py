@@ -27,7 +27,7 @@ from pyanalytica.ui.components.status import status_server, status_ui
 _GUIDE = [
     ("number", "category", "group means, boxplots", "t-test or ANOVA", "regression on group dummies"),
     ("number", "number", "r and the fitted line, scatter", "correlation test", "the fitted line"),
-    ("category", "category", "row percentages, grouped bars", "chi-square", "pointer to Model > Classify"),
+    ("category", "category", "row percentages, the rate in each group", "chi-square", "pointer to Model > Classify"),
     ("category", "number", "read as number by category, roles swapped", "t-test or ANOVA", "pointer to Model > Classify"),
 ]
 
